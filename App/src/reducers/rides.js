@@ -12,6 +12,7 @@ import {
   RIDE_ACCEPTED_NOTIF,
   NEW_RIDE_NOTIF,
   CREATE_RIDE,
+  PAYMENT_RIDE,
 } from '../actions/rides';
 
 const initialState = {
@@ -39,14 +40,14 @@ const rides = (state = initialState, action) => {
         error: 'Error',
       };
     case CREATE_RIDE:
-      console.log('hmm');
+      //console.log('hmm');
       return {
         ...state,
       };
 
     case `${CREATE_RIDE}_SUCCESS`:
-      console.log('CREATE RIDE');
-      Alert.alert('Booking Success');
+      //console.log('CREATE RIDE');
+      Alert.alert('Booking Request Success');
       return {
         ...state,
         isRideCreated: true,
@@ -56,7 +57,7 @@ const rides = (state = initialState, action) => {
         },
       };
     case `${CREATE_RIDE}_FAILURE`:
-      console.log('CREATE RIDE FAIL');
+      //console.log('CREATE RIDE FAIL');
 
       return {
         ...state,
@@ -114,8 +115,18 @@ const rides = (state = initialState, action) => {
         ...state,
         error: 'Error getting rides',
       };
+    case `${PAYMENT_RIDE}_SUCCESS`:
+      return {
+        ...state,
+        myRide: data,
+      };
+    case `${PAYMENT_RIDE}_FAILURE`:
+      return {
+        ...state,
+        error: 'Error payment for rides',
+      };
     case `${DECIDE_RIDE}_SUCCESS`:
-      console.log('DRIVER RIDE', data);
+      //console.log('DRIVER RIDE', data);
       return {
         ...state,
         myRide: data,
@@ -139,7 +150,7 @@ const rides = (state = initialState, action) => {
         myRide: ride,
       };
     case NEW_RIDE_NOTIF:
-      console.log('YAYYYYY----', payload);
+      //console.log('YAYYYYY----', payload);
       return {
         ...state,
         myRide: {...payload.ride},

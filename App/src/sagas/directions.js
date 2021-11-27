@@ -11,11 +11,11 @@ function* getDirectionsFlow() {
 
 function* getDirections({payload}) {
   try {
-    console.log('DDD', payload);
+    //console.log('DDD', payload);
     const resp = yield axios.get(
       `${baseUrl}/directions/v5/mapbox/driving/${payload.coordinates}?access_token=pk.eyJ1IjoicmVoYW5tb2hpdWRkaW4iLCJhIjoiY2trZnB4cW5lMDZxNzJ2cDFnMW1zY3I3OCJ9.v2_CIYKDH18UeCNkRxui0A`,
     );
-    console.log('Resp DIRECTIONS', resp.data);
+    //console.log('Resp DIRECTIONS', resp.data);
     if (resp && resp.status === 200) {
       yield put({
         type: GET_DIRECTIONS + '_SUCCESS',
@@ -23,7 +23,7 @@ function* getDirections({payload}) {
       });
     }
   } catch (err) {
-    console.log('ERRORR', err);
+    //console.log('ERRORR', err);
     yield put({
       type: GET_DIRECTIONS + '_FAILURE',
     });

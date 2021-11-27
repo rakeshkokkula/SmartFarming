@@ -28,6 +28,7 @@ import {ScrollView} from 'react-native';
 class register extends Component {
   state = {
     phone: null,
+    password: '',
     name: '',
     otpSent: null,
     role: 'driver',
@@ -35,23 +36,24 @@ class register extends Component {
     otp: null,
   };
   componentDidUpdate() {
-    console.log('up', this.props);
+    //console.log('up', this.props);
     if (this.props.isRegistered && !this.state.otpSent) {
       this.setState({otpSent: true});
     }
     if (this.props.isConfirmed) {
       AsyncStorage.setItem('user', JSON.stringify(this.props.user));
-      this.props.navigation.navigate('Home');
+      this.props.navigation.navigate('App');
     }
   }
   handleotp = () => {
-    const {name, phone, role} = this.state;
+    const {name, phone, role, password} = this.state;
     if (role === 'driver') {
-      console.log(this.state);
+      //console.log(this.state, 'state');
 
-      this.props.driverRegister({name: name, phone: phone});
+      this.props.driverRegister({name: name, phone: phone, password});
     }
-    if (role === 'user') this.props.userRegister({name: name, phone: phone});
+    if (role === 'user')
+      this.props.userRegister({name: name, phone: phone, password});
   };
   confirm = () => {
     const {role} = this.state;
@@ -121,6 +123,30 @@ class register extends Component {
                 leftIcon={{type: 'font-awesome', name: 'phone'}}
                 style={styles.phone}
                 onChangeText={(value) => this.setState({phone: value})}
+              />
+            </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'flex-start',
+                alignItems: 'center',
+                borderWidth: 2,
+                borderColor: '#758283',
+                marginTop: 35,
+              }}>
+              <Icon
+                style={{marginLeft: 10}}
+                name="lock"
+                size={35}
+                color="#000"
+              />
+
+              <TextInput
+                secureTextEntry
+                placeholder="Password"
+                leftIcon={{type: 'font-awesome', name: 'lock'}}
+                style={styles.phone}
+                onChangeText={(value) => this.setState({password: value})}
               />
             </View>
           </View>
@@ -256,7 +282,7 @@ class register extends Component {
 }
 
 const mapStateToProps = ({auth}) => {
-  console.log('mapstp', auth);
+  //console.log('mapstp', auth);
   return {
     isConfirmed: auth.isConfirmed,
     isRegistered: auth.isRegistered,

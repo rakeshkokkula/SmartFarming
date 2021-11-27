@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
 });
 class Search extends Component {
   state = {
-    location: [0, 0],
+    location: [17.385044, 78.486671],
     query: '',
     search: null,
     book: true,
@@ -61,7 +61,7 @@ class Search extends Component {
     count: 1,
   };
   handleText = (text) => {
-    console.log(text.length);
+    //console.log(text.length);
     if (text.length === 0) {
       this.props.setPlacesEmpty();
     } else {

@@ -15,7 +15,7 @@ const createBookingDoc = (req) => {
     fare,
     payment_type,
   } = req.body;
-  console.log("DOC", req.body);
+  // console.log("DOC", req.body);
   const ride = new rideSchema({
     pickup_lat: pickup_lat,
     pickup_lng: pickup_lng,

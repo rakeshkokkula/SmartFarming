@@ -19,10 +19,10 @@ module.exports = (socketio) => {
           );
           socket.on("ride", async (rideId) => {
             let ride = await Ride.findById({ _id: rideId });
-            //console.log("UPDATE", ride);
+            console.log("UPDATE", ride);
 
             socket.on("update", async (lat, long) => {
-              console.log("location", lat, long);
+              console.log("location", lat, long, ride);
               await Driver.findByIdAndUpdate(
                 { _id: ride.driver_id },
                 { lat: lat, long: long }
@@ -44,7 +44,7 @@ module.exports = (socketio) => {
             "customers.isCompleted": true,
           }).populate("driver_id");
           if (ride) {
-            console.log("user1", ride);
+            console.log("user1 track", ride);
             socketio
               .to(userId.toString())
               .emit("track", ride.driver_id.lat, ride.driver_id.long);

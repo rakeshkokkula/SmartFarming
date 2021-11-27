@@ -37,6 +37,7 @@ import setupSocket from './socket';
 import CreateRide from './src/components/Home/CreateRide';
 import {createDrawerNavigator} from '@react-navigation/drawer';
 import NavigationMenu from './src/components/Home/NavigationMenu';
+import PaymentScreen from './src/components/payment';
 
 const store = storeConfig();
 const Stack = createStackNavigator();
@@ -49,7 +50,7 @@ const App = (props) => {
   const isLoggedIn = async () => {
     try {
       const user = await AsyncStorage.getItem('user');
-      console.log('userr', user);
+      //console.log('userr', user);
       if (user !== null) {
         setUser(JSON.parse(user));
       }
@@ -60,10 +61,10 @@ const App = (props) => {
   };
   const socket = setupSocket();
   useEffect(() => {
-    console.log('HMM', props);
+    //console.log('HMM', props);
     isLoggedIn();
   }, []);
-  console.log('token', user.token);
+  //console.log('token', user.token);
   socket.emit('join', user?.user?._id);
   const DrawerStack = () => {
     return (

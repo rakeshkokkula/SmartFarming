@@ -19,7 +19,7 @@ const places = (state = initialState, action) => {
   let {type, data, payload} = action;
   switch (type) {
     case `${GET_PLACES}_SUCCESS`:
-      console.log('YAYYYY', data);
+      //console.log('YAYYYY', data);
       return {
         ...state,
         places: data.features,
@@ -41,7 +41,7 @@ const places = (state = initialState, action) => {
         showPlaces: false,
       };
     case SET_PLACE_EMPTY:
-      console.log('Empty');
+      //console.log('Empty');
       return {
         ...state,
         places: [],

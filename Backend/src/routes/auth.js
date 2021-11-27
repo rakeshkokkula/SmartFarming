@@ -20,7 +20,7 @@ module.exports = (passport) => {
       //   return res.status(409).json({ message: "Passwords do not match" });
       // }
       const salt = await bcrypt.genSalt(10);
-      const hash = await bcrypt.hash(req.body.phone, salt);
+      const hash = await bcrypt.hash(req.body.password, salt);
       const newUser = new User({
         name: req.body.name,
         password: hash,
@@ -42,7 +42,7 @@ module.exports = (passport) => {
       token.save();
       let sms = await sendSms.messages.create({
         body: `Verification OTP is ${token.code}`,
-        from: "+16176074434",
+        from: "+14706256871",
         to: `+91${req.body.phone}`,
       });
 
@@ -66,7 +66,7 @@ module.exports = (passport) => {
       //   return res.status(409).json({ message: "Passwords do not match" });
       // }
       const salt = await bcrypt.genSalt(10);
-      const hash = await bcrypt.hash(req.body.phone, salt);
+      const hash = await bcrypt.hash(req.body.password, salt);
       const newUser = new Driver({
         name: req.body.name,
         password: hash,
@@ -88,7 +88,7 @@ module.exports = (passport) => {
       token.save();
       let sms = await sendSms.messages.create({
         body: `Verification OTP is ${token.code}`,
-        from: "+16176074434",
+        from: "+14706256871",
         to: `+91${req.body.phone}`,
       });
 
@@ -98,6 +98,7 @@ module.exports = (passport) => {
         message: "Partner Successfully Registered",
       });
     } catch (err) {
+      console.log(err.message);
       return res.status(500).json({ message: err });
     }
   };
@@ -107,29 +108,37 @@ module.exports = (passport) => {
       const user = await User.findOne({ phoneNo: req.body.phone });
       if (!user) return res.status(401).json({ message: "Invalid email" });
 
-      const isValid = await bcrypt.compare(req.body.phone, user.password);
+      const isValid = await bcrypt.compare(req.body.password, user.password);
       if (!isValid)
         return res.status(401).json({ message: "Invalid password" });
       const jwt = await jwtUtils.generateAuthJwt(user);
       const tokenArray = jwt.token.split(" ");
       const jwtToken = tokenArray[1];
-      const token = await Token.findOneAndUpdate(
-        { _userId: user._id },
-        {
-          token: jwtToken,
-          code: Math.floor(1000 + Math.random() * 9000),
-          expiresIn: jwt.expiresIn,
-        },
-        { new: true }
-      );
+      // const token = await Token.findOneAndUpdate(
+      //   { _userId: user._id },
+      //   {
+      //     token: jwtToken,
+      //     code: Math.floor(1000 + Math.random() * 9000),
+      //     expiresIn: jwt.expiresIn,
+      //   },
+      //   { new: true }
+      // );
       //token.save();
-      await sendSms.messages.create({
-        body: `Verification OTP is ${token.code}`,
-        from: "+16176074434",
-        to: `+91${req.body.phone}`,
-      });
+      // await sendSms.messages.create({
+      //   body: `Verification OTP is ${token.code}`,
+      //   from: "+14706256871",
+      //   to: `+91${req.body.phone}`,
+      // });
+      // return res.status(200).json({
+      //   message: "User Signed in Successfully ",
+      // });
       return res.status(200).json({
+        token: jwtToken,
         message: "User Signed in Successfully ",
+        uid: user._id,
+        expiresIn: jwt.expiresIn,
+        user: user,
+        role: "user",
       });
     } catch (err) {
       console.log(err);
@@ -144,30 +153,42 @@ module.exports = (passport) => {
       console.log(user);
       if (!user) return res.status(401).json({ message: "Invalid email" });
 
-      const isValid = await bcrypt.compare(req.body.phone, user.password);
+      const isValid = await bcrypt.compare(req.body.password, user.password);
       if (!isValid)
         return res.status(401).json({ message: "Invalid password" });
       const jwt = await jwtUtils.generateAuthJwt(user);
       const tokenArray = jwt.token.split(" ");
       const jwtToken = tokenArray[1];
-      const token = await DriverToken.findOneAndUpdate(
-        { _userId: user._id },
-        {
-          token: jwtToken,
-          code: Math.floor(1000 + Math.random() * 9000),
-          expiresIn: jwt.expiresIn,
-        },
-        { new: true }
-      );
-      console.log(token);
-      await sendSms.messages.create({
-        body: `Verification OTP is ${token.code}`,
-        from: "+16176074434",
-        to: `+91${req.body.phone}`,
-      });
-      console.log(token.token);
+      // const token = await DriverToken.findOneAndUpdate(
+      //   { _userId: user._id },
+      //   {
+      //     token: jwtToken,
+      //     code: Math.floor(1000 + Math.random() * 9000),
+      //     expiresIn: jwt.expiresIn,
+      //   },
+      //   { new: true }
+      // );
+      // console.log(token);
+      // await sendSms.messages.create({
+      //   body: `Verification OTP is ${token.code}`,
+      //   from: "+14706256871",
+      //   to: `+91${req.body.phone}`,
+      // });
+      // console.log(token.token);
+      // return res.status(200).json({
+      //   message: "Driver Signed in Successfully ",
+      // });
+      // let driver = await Driver.findOne({ _id: user._id }).select(
+      //   "name phoneNo"
+      // );
+      // return res.status(200).redirect('http://localhost:3000/createWorkspace');
       return res.status(200).json({
+        token: jwtToken,
         message: "Driver Signed in Successfully ",
+        uid: user._id,
+        expiresIn: jwt.expiresIn,
+        user: user,
+        role: "driver",
       });
     } catch (err) {
       console.log(err);
@@ -181,6 +202,7 @@ module.exports = (passport) => {
         { code: req.query.code },
         { code: null }
       );
+      // console.log(token, req.query.code);
       let user = await User.findOne({ _id: token._userId }).select(
         "name phoneNo"
       );

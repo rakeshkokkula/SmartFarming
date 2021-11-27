@@ -39,8 +39,8 @@ app.set("view engine", "ejs");
 
 mongoose
   .connect(
-    "mongodb+srv://admin:kVbi2cXxLOCuQIig@cluster0.asbkh.mongodb.net/pooling?retryWrites=true&w=majority",
-    { useNewUrlParser: true, useUnifiedTopology: true }
+    "mongodb+srv://carpooling03:dXc2mY6gp3d6vPd@carpooling.84jtc.mongodb.net/smartFarming?retryWrites=true&w=majority",
+    { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false }
   )
   .then(() => {
     console.log("DB CONNECTED");

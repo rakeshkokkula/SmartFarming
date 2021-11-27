@@ -8,10 +8,17 @@ import {
   TextInput,
   TouchableOpacity,
   Linking,
+  PermissionsAndroid,
+  Alert,
 } from 'react-native';
 import MapboxGL from '@react-native-mapbox-gl/maps';
 import Geolocation from '@react-native-community/geolocation';
-import {rideStatus, trackRide, getRoute} from '../../actions/rides';
+import {
+  rideStatus,
+  trackRide,
+  getRoute,
+  paymentRide,
+} from '../../actions/rides';
 import PropTypes from 'prop-types';
 import polyline from '@mapbox/polyline';
 import drop from '../../assets/drop.png';
@@ -22,6 +29,7 @@ import menu from '../../assets/menu.png';
 import {connect} from 'react-redux';
 import setupSocket from '../../../socket';
 import {Card} from 'react-native-elements';
+import RazorpayCheckout from 'react-native-razorpay';
 
 const styles = StyleSheet.create({
   page: {
@@ -60,48 +68,110 @@ const styles = StyleSheet.create({
 
 class BookRide extends Component {
   state = {
-    location: [],
+    location: [0, 0],
     route: null,
     user: null,
     rideDetails: null,
     locations: null,
     cabLoc: [],
+    paymentSuccess: false,
   };
   socket = setupSocket();
 
+  async requestLocationPermission() {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        {
+          title: 'Location Permission',
+          message: 'MyMapApp needs access to your location',
+        },
+      );
+
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        Geolocation.getCurrentPosition(
+          (info) => {
+            console.log('HJjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj', info);
+            this.setState({
+              location: [+info.coords.longitude, +info.coords.latitude],
+            });
+            // this.setState({
+            //   location: [78.486671, 17.385044],
+            // });
+          },
+          (err) => {
+            console.log(err, 'error');
+            Alert.alert(
+              'Info',
+              'Please Turn on your location and restart the app',
+            );
+          },
+          {enableHighAccuracy: true, timeout: 20000, maximumAge: 5000},
+        );
+        console.log('Location permission granted');
+      } else {
+        console.log('Location permission denied');
+      }
+    } catch (err) {
+      //console.warn(err, 'err');
+    }
+  }
+
   componentDidMount() {
     MapboxGL.setTelemetryEnabled(false);
-    console.log('PROPS', this.props.myRide);
+    //console.log('PROPS', this.props.myRide);
     let loc = '';
+    let locate = [];
     if (this.props.myRide) {
       this.props.myRide?.routes.forEach((route) => {
         let {lat, long} = route;
         loc = loc + `${long},${lat};`;
       });
+      locate = [
+        +this.props.myRide?.routes[0].long,
+        +this.props.myRide?.routes[0].lat,
+      ];
       loc = loc.slice(0, -1);
-      console.log('CON', loc);
     }
-    this.setState({user: this.props.route.params?.user, locations: loc});
-    //this.props.trackRide({userId: this.props.route.params.user.user._id});
-    Geolocation.getCurrentPosition((info) => {
-      console.log('HJ', info);
-      this.setState({
-        location: [info.coords.longitude, info.coords.latitude],
-      });
+    // console.log('CON', loc);
+    this.setState({
+      user: this.props.route.params?.user,
+      locations: loc,
+      location: locate,
     });
+    console.log(locate, 'locate');
+    //this.props.trackRide({userId: this.props.route.params.user.user._id});
+    this.requestLocationPermission();
+    // Geolocation.getCurrentPosition(
+    //   (info) => {
+    //     console.log('HJ', info);
+    //     this.setState({
+    //       location: [info.coords.longitude, info.coords.latitude],
+    //     });
+    //   },
+    //   (err) => {
+    //     console.log(err, 'error');
+    //   },
+    //   {enableHighAccuracy: true, timeout: 20000, maximumAge: 5000},
+    // );
   }
   componentDidUpdate(prevProps, prevState) {
-    console.log('LOCATIONS', prevState);
+    //console.log('LOCATIONS', prevState);
     // if (this.state.rideDetails === null) {
     //   this.setState({rideDetails: this.props.myRide});
     // }
     // if (this.props.myRide) {
-    //   console.log('CALL', this.props.myRide._id);
+    //   //console.log('CALL', this.props.myRide._id);
     //   BackgroundGeolocation;
     //   socket.emit('join', this.state.user.user._id);
     //   socket.emit('update', this.props.myRide._id, '17.3930', '78.4730');
     // }
     this.socket.emit('join', this.state.user?._id);
+    this.socket.on('completed', (ride) => {
+      this.props.navigation.navigate('Home');
+      this.props.trackRide({userId: this.props?.user?.user?._id});
+      Alert.alert('Info', 'Ride Completed');
+    });
     this.socket.on('track', (lat, long) => {
       if (
         (this.state.cabLoc[0] !== undefined &&
@@ -109,8 +179,8 @@ class BookRide extends Component {
           prevState.cabLoc[1] !== this.state.cabLoc[1]) ||
         this.state.cabLoc.length === 0
       ) {
-        console.log('TRACK', lat, long);
-        this.setState({cabLoc: [long, lat]});
+        //console.log('TRACK', lat, long);
+        this.setState({cabLoc: [+long, +lat]});
       }
     });
     if (this.state.locations !== null) {
@@ -122,12 +192,12 @@ class BookRide extends Component {
       this.props.routes?.routes[0] !== undefined
     ) {
       let arr = polyline.toGeoJSON(this.props.routes.routes[0].geometry, 6);
-      console.log('ARR', arr);
+      //console.log('ARR', arr);
       this.setState({route: arr});
     }
   }
   render() {
-    console.log('ROUTES', this.props.myRide?.customers);
+    //console.log('ROUTES', this.props.myRide?.customers);
     const {myRide} = this.props;
     return (
       <View style={styles.page}>
@@ -149,6 +219,68 @@ class BookRide extends Component {
               source={menu}
             />
           </TouchableOpacity>
+          {this.props.myRide?.customers.filter(
+            (i) => i._id === this.state.user?._id,
+          ).length &&
+          !this.props.myRide?.customers.find(
+            (i) => i._id === this.state.user?._id,
+          ).paymentStatus &&
+          !this.state.paymentSuccess ? (
+            <TouchableOpacity
+              style={{
+                borderWidth: 1,
+                borderColor: 'rgba(0,0,0,0.2)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 100,
+                position: 'absolute',
+                bottom: 10,
+                left: 10,
+                zIndex: 5,
+                height: 50,
+                backgroundColor: '#333',
+                borderRadius: 10,
+              }}
+              onPress={() => {
+                const details = this.props.myRide?.customers.filter(
+                  (i) => i._id === this.state.user?._id,
+                );
+                const data = details ? details[0] : {};
+                var options = {
+                  description: 'Ride fare',
+                  image: 'https://i.imgur.com/3g7nmJC.png',
+                  currency: 'INR',
+                  key: 'rzp_test_JP95iq1QMQU6er', // Your api key
+                  amount: data.total_price * 100,
+                  name: this.state.user?.name,
+                  prefill: {
+                    // email: 'void@razorpay.com',
+                    // contact: '9191919191',
+                    name: this.state.user?.name,
+                  },
+                  theme: {color: '#F37254'},
+                };
+                RazorpayCheckout.open(options)
+                  .then((data) => {
+                    this.setState({paymentSuccess: true});
+                    this.props.paymentRide({
+                      userId: this.state.user?._id,
+                      paymentId: data.razorpay_payment_id,
+                      rideId: this.props.myRide._id,
+                    });
+                    Alert.alert('Success', 'Payment Success');
+                    // handle success
+                    //   Alert.alert(`Success: ${data.razorpay_payment_id}`);
+                  })
+                  .catch((error) => {
+                    // handle failure
+                    console.log(error);
+                    //   Alert.alert(`Error: ${error.code} | ${error.description}`);
+                  });
+              }}>
+              <Text style={{color: '#fff'}}>Pay</Text>
+            </TouchableOpacity>
+          ) : null}
           <TouchableOpacity
             style={{
               borderWidth: 1,
@@ -186,26 +318,27 @@ class BookRide extends Component {
             <MapboxGL.MarkerView
               coordinate={
                 this.state.cabLoc[0] === undefined
-                  ? [myRide?.driver_id.long, myRide?.driver_id.lat]
+                  ? [+myRide?.driver_id.long, +myRide?.driver_id.lat]
                   : this.state.cabLoc
               }>
               <Image source={cab} />
             </MapboxGL.MarkerView>
             {this.props.myRide?.routes.map((route, index) => {
-              console.log('lat long', route);
+              //console.log('lat long', route);
               if (route.state === 'pickup') {
                 return (
                   <MapboxGL.MarkerView
                     key={index}
-                    coordinate={[route.long, route.lat]}>
+                    coordinate={[+route.long, +route.lat]}>
                     <Image source={pickup} />
                   </MapboxGL.MarkerView>
                 );
               } else {
+                console.log(route, 'route');
                 return (
                   <MapboxGL.MarkerView
                     key={route._id}
-                    coordinate={[route.long, route.lat]}>
+                    coordinate={[+route.long, +route.lat]}>
                     <Image source={drop} />
                   </MapboxGL.MarkerView>
                 );
@@ -239,7 +372,7 @@ class BookRide extends Component {
             </Card.Title>
             <Card.Divider style={{backgroundColor: '#000'}} />
             {this.props.myRide?.customers.map((customer) => {
-              //console.log('HNM', this.state.user);
+              ////console.log('HNM', this.state.user);
               if (customer._id === this.state.user?._id) {
                 return (
                   <View style={{justifyContent: 'center'}} key={customer._id}>
@@ -277,6 +410,9 @@ const mapStateToProps = ({auth, rides}) => {
   };
 };
 
-export default connect(mapStateToProps, {rideStatus, trackRide, getRoute})(
-  BookRide,
-);
+export default connect(mapStateToProps, {
+  rideStatus,
+  trackRide,
+  getRoute,
+  paymentRide,
+})(BookRide);

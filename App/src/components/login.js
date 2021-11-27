@@ -31,6 +31,7 @@ import {NavigationActions, StackActions} from 'react-navigation';
 class login extends Component {
   state = {
     phone: null,
+    password: '',
     name: '',
     otpSent: null,
     role: 'user',
@@ -41,20 +42,20 @@ class login extends Component {
     try {
       const jsonValue = JSON.stringify(value);
       await AsyncStorage.setItem('user', jsonValue);
-      console.log(jsonValue);
+      //console.log(jsonValue, 'jsonValue');
     } catch (e) {
       // save error
     }
     this.props.navigation.navigate('App');
-    console.log('Done.');
+    //console.log('Done.');
   };
   componentDidUpdate() {
-    console.log('up', this.props);
+    //console.log('up', this.props);
     if (this.props.isLoggedin && !this.state.otpSent) {
       this.setState({otpSent: true});
     }
     if (this.props.isConfirmed) {
-      console.log('USER', this.props.user);
+      //console.log('USER', this.props.user);
       this.setUserObject(this.props.user);
       this.props.navigation.navigate('App');
       this.props.navigation.reset({
@@ -66,6 +67,7 @@ class login extends Component {
   componentWillUnmount() {
     this.setState({
       phone: null,
+      password: '',
       name: '',
       otpSent: null,
       role: 'user',
@@ -74,13 +76,13 @@ class login extends Component {
     });
   }
   handleotp = () => {
-    const {name, phone, role} = this.state;
-    console.log(this.state.role);
+    const {name, phone, role, password} = this.state;
+    //console.log(this.state.role, 'role');
     if (role === 'driver') {
-      console.log('state', this.state);
-      this.props.driverLogin({phone: phone});
+      //console.log('state', this.state);
+      this.props.driverLogin({phone: phone, password});
     }
-    if (role === 'user') this.props.userLogin({phone: phone});
+    if (role === 'user') this.props.userLogin({phone: phone, password});
   };
   confirm = () => {
     const {role} = this.state;
@@ -90,7 +92,7 @@ class login extends Component {
     if (role === 'user') this.props.confirmUser({code: this.state.otp});
   };
   render() {
-    console.log('ROLE', this.props.screenProps);
+    //console.log('ROLE', this.props.screenProps);
     return (
       <ScrollView style={{height: '100%'}}>
         <View style={styles.container}>
@@ -102,7 +104,7 @@ class login extends Component {
           <View
             style={{
               alignItems: 'center',
-              flexDirection: 'row',
+              // flexDirection: 'row',
               margin: 40,
             }}>
             <View
@@ -127,6 +129,29 @@ class login extends Component {
                 leftIcon={{type: 'font-awesome', name: 'phone'}}
                 style={styles.phone}
                 onChangeText={(value) => this.setState({phone: value})}
+              />
+            </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'flex-start',
+                alignItems: 'center',
+                borderWidth: 2,
+                borderColor: '#758283',
+              }}>
+              <Icon
+                style={{marginLeft: 10}}
+                name="lock"
+                size={35}
+                color="#000"
+              />
+
+              <TextInput
+                secureTextEntry
+                placeholder="Password"
+                leftIcon={{type: 'font-awesome', name: 'lock'}}
+                style={styles.phone}
+                onChangeText={(value) => this.setState({password: value})}
               />
             </View>
           </View>
@@ -172,7 +197,7 @@ class login extends Component {
             </View>
           </View>
 
-          {this.state.otpSent && (
+          {/* {this.state.otpSent && (
             <View
               style={{
                 flexDirection: 'row',
@@ -198,43 +223,43 @@ class login extends Component {
                 onChangeText={(value) => this.setState({otp: value})}
               />
             </View>
-          )}
-          {!this.state.otpSent ? (
-            <View
-              style={{
-                backgroundColor: '#000',
-                width: '100%',
-                height: 55,
-                marginTop: 20,
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexDirection: 'row',
-              }}>
-              <Button
-                onPress={() => this.handleotp()}
-                color="#000"
-                title="Get OTP"
-              />
-            </View>
-          ) : (
-            <View
-              style={{
-                backgroundColor: '#000',
-                width: '100%',
-                height: 55,
-                marginTop: 20,
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexDirection: 'row',
-              }}>
-              <Button
-                onPress={() => this.confirm()}
-                color="#000"
-                title="Login"
-              />
-              <Icon color="#fff" name="arrow-right" />
-            </View>
-          )}
+          )} */}
+          {/* {!this.state.otpSent ? ( */}
+          <View
+            style={{
+              backgroundColor: '#000',
+              width: '100%',
+              height: 55,
+              marginTop: 20,
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexDirection: 'row',
+            }}>
+            <Button
+              onPress={() => this.handleotp()}
+              color="#000"
+              title="Login"
+            />
+          </View>
+          {/*  ) : (
+            // <View
+            //   style={{
+            //     backgroundColor: '#000',
+            //     width: '100%',
+            //     height: 55,
+            //     marginTop: 20,
+            //     alignItems: 'center',
+            //     justifyContent: 'center',
+            //     flexDirection: 'row',
+            //   }}>
+            //   <Button
+            //     onPress={() => this.confirm()}
+            //     color="#000"
+            //     title="Login"
+            //   />
+            //   <Icon color="#fff" name="arrow-right" />
+            // </View>
+          // )} */}
         </View>
       </ScrollView>
     );
@@ -242,7 +267,7 @@ class login extends Component {
 }
 
 const mapStateToProps = ({auth}) => {
-  //console.log('mapstp', auth);
+  ////console.log('mapstp', auth);
   return {
     isConfirmed: auth.isConfirmed,
     isLoggedin: auth.isLoggedin,

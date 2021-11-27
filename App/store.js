@@ -10,7 +10,7 @@ const storeConfig = () => {
   let middleware = applyMiddleware(sagaMiddleware);
 
   const store = createStore(reducers, middleware);
-  console.log('STORE ==>', store);
+  //console.log('STORE ==>', store);
   const socket = setupSocket(store);
 
   sagaMiddleware.run(sagas, socket);

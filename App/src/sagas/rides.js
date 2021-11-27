@@ -15,11 +15,14 @@ import {
   DECIDE_RIDE,
   CLOSE_RIDE,
   CREATE_RIDE,
+  PAYMENT_RIDE,
 } from '../actions/rides';
+import endpoints from '../constants/strings';
+import {ToastAndroid, Alert} from 'react-native';
 
 import axios from 'axios';
-import {Alert} from 'react-native';
-const baseUrl = 'https://calm-chamber-53903.herokuapp.com';
+// const baseUrl = 'https://calm-chamber-53903.herokuapp.com';
+const baseUrl = endpoints.BASE_URL;
 axios.defaults.baseURL = baseUrl;
 //axios.defaults.timeout = 1000;
 function* getAllNearByFlow() {
@@ -56,6 +59,10 @@ function* closeRideFLow() {
   yield takeLatest(CLOSE_RIDE, closeRide);
 }
 
+function* paymentRideFLow() {
+  yield takeLatest(PAYMENT_RIDE, paymentRide);
+}
+
 function* getNearByRides({payload}) {
   try {
     const resp = yield axios.get(
@@ -69,6 +76,7 @@ function* getNearByRides({payload}) {
       });
     }
   } catch (err) {
+    console.log('err', payload, err);
     yield put({
       type: GET_NEARBY_RIDES + '_FAILURE',
     });
@@ -91,6 +99,7 @@ function* bookRide({payload}) {
     }
   } catch (err) {
     console.log('error', err);
+    ToastAndroid.show('Pickup is out of Hyderabad', ToastAndroid.SHORT);
     yield put({
       type: CREATE_RIDE + '_FAILURE',
     });
@@ -112,7 +121,7 @@ function* trackRide({payload}) {
       });
     }
   } catch (err) {
-    console.log('RIDE TRACK ERROR', err);
+    //console.log('RIDE TRACK ERROR', err);
     yield put({
       type: TRACK_RIDE + '_FAILURE',
     });
@@ -121,11 +130,11 @@ function* trackRide({payload}) {
 
 function* getRoute({payload}) {
   try {
-    console.log(payload.locations);
+    //console.log(payload.locations, 'location');
     const resp = yield axios.get(
       `https://api.mapbox.com/directions/v5/mapbox/driving/${payload.locations}?geometries=polyline6&access_token=pk.eyJ1IjoicmVoYW5tb2hpdWRkaW4iLCJhIjoiY2trZnB4cW5lMDZxNzJ2cDFnMW1zY3I3OCJ9.v2_CIYKDH18UeCNkRxui0A`,
     );
-    //console.log('Resp MY RIde', resp.data);
+    ////console.log('Resp MY RIde', resp.data);
     if (resp && resp.status === 200) {
       yield put({
         type: GET_ROUTE + '_SUCCESS',
@@ -144,7 +153,7 @@ function* rideStatus({payload}) {
     const resp = yield axios.get(
       `${baseUrl}/ride/status?userId=${payload.userId}`,
     );
-    //console.log('Resp MY RIde', resp.data);
+    ////console.log('Resp MY RIde', resp.data);
     if (resp && resp.status === 200) {
       yield put({
         type: RIDE_STATUS + '_SUCCESS',
@@ -164,7 +173,7 @@ function* getRides({payload}) {
     const resp = yield axios.get(
       `${baseUrl}/ride/rides/driver?driverId=${payload.driverId}`,
     );
-    //console.log('Resp MY RIde Driver', resp.data);
+    console.log('Resp MY RIde Driver', resp.data);
     if (resp && resp.status === 200) {
       yield put({
         type: GET_RIDES + '_SUCCESS',
@@ -172,6 +181,7 @@ function* getRides({payload}) {
       });
     }
   } catch (err) {
+    ToastAndroid.show('No Rides', ToastAndroid.SHORT);
     console.log('ERRO DRIVER', err, payload);
     yield put({
       type: GET_RIDES + '_FAILURE',
@@ -182,7 +192,7 @@ function* getRides({payload}) {
 function* completeRide({payload}) {
   try {
     const resp = yield axios.patch(`${baseUrl}/ride/completeRide`, payload);
-    console.log('Resp MY RIde Complete', resp.data);
+    //console.log('Resp MY RIde Complete', resp.data);
     Alert.alert('Success');
     if (resp && resp.status === 200) {
       yield put({
@@ -191,7 +201,7 @@ function* completeRide({payload}) {
       });
     }
   } catch (err) {
-    console.log('ERRO DRIVER COmplete', err, payload);
+    //console.log('ERRO DRIVER COmplete', err, payload);
     Alert.alert(err);
     yield put({
       type: COMPLETE_RIDE + '_FAILURE',
@@ -202,7 +212,7 @@ function* completeRide({payload}) {
 function* decideRide({payload}) {
   try {
     const resp = yield axios.patch(`${baseUrl}/ride/decideRide`, payload);
-    console.log('Resp decide -->', resp.data.customers);
+    //console.log('Resp decide -->', resp.data.customers);
     //Alert.alert('J');
     if (resp && resp.status === 200) {
       yield put({
@@ -211,7 +221,7 @@ function* decideRide({payload}) {
       });
     }
   } catch (err) {
-    console.log('ERRO DRIVER', err, payload);
+    //console.log('ERRO DRIVER', err, payload);
     yield put({
       type: DECIDE_RIDE + '_FAILURE',
     });
@@ -220,6 +230,7 @@ function* decideRide({payload}) {
 
 function* closeRide({payload}) {
   try {
+    console.log(payload);
     const resp = yield axios.patch(
       `${baseUrl}/ride/closeRide?driverId=${payload.driverId}`,
     );
@@ -231,9 +242,30 @@ function* closeRide({payload}) {
       });
     }
   } catch (err) {
-    console.log('ERRO DRIVER', err, payload);
+    //console.log('ERRO DRIVER', err, payload);
     yield put({
       type: CLOSE_RIDE + '_FAILURE',
+    });
+  }
+}
+
+function* paymentRide({payload}) {
+  try {
+    console.log(payload);
+    const resp = yield axios.patch(
+      `${baseUrl}/ride/paymentRide?userId=${payload.userId}&rideId=${payload.rideId}&paymentId=${payload.paymentId}`,
+    );
+    console.log('Resp payment -->', resp.data);
+    if (resp && resp.status === 200) {
+      yield put({
+        type: PAYMENT_RIDE + '_SUCCESS',
+        data: resp.data,
+      });
+    }
+  } catch (err) {
+    //console.log('ERRO DRIVER', err, payload);
+    yield put({
+      type: PAYMENT_RIDE + '_FAILURE',
     });
   }
 }
@@ -248,4 +280,5 @@ export default [
   fork(completeRideFlow),
   fork(decideRideFlow),
   fork(closeRideFLow),
+  fork(paymentRideFLow),
 ];

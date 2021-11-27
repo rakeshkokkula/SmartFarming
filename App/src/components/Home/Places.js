@@ -4,6 +4,7 @@ import {View} from 'react-native';
 import {connect} from 'react-redux';
 import {bookingReview} from '../../actions/places';
 import {getDirections} from '../../actions/directions';
+import {getNearByAction} from '../../actions/rides';
 import {TouchableWithoutFeedback} from 'react-native';
 import {Keyboard} from 'react-native';
 
@@ -25,7 +26,11 @@ class Places extends Component {
                   <Text
                     key={place.id}
                     onPress={() => {
-                      console.log('CLICKED');
+                      //console.log('CLICKED');
+                      this.props.getNearByAction({
+                        lat: this.props.myLocation[1],
+                        long: this.props.myLocation[0],
+                      });
                       this.props.getDirections({
                         coordinates: `${place.geometry.coordinates[0]},${place.geometry.coordinates[1]};${this.props.myLocation[0]},${this.props.myLocation[1]}`,
                       });
@@ -56,4 +61,8 @@ const mapStateToProps = ({places}) => ({
   places: places.places,
 });
 
-export default connect(mapStateToProps, {bookingReview, getDirections})(Places);
+export default connect(mapStateToProps, {
+  bookingReview,
+  getDirections,
+  getNearByAction,
+})(Places);

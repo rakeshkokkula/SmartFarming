@@ -29,31 +29,38 @@ class NavigationMenu extends Component {
     location: null,
   };
   getUserLocation = () => {
-    Geolocation.getCurrentPosition((info) => {
-      this.setState({
-        location: [info.coords.longitude, info.coords.latitude],
-      });
-    });
+    Geolocation.getCurrentPosition(
+      (info) => {
+        this.setState({
+          location: [info.coords.longitude, info.coords.latitude],
+        });
+      },
+      (err) => {
+        //console.log(err, 'error');
+      },
+      {enableHighAccuracy: true, timeout: 20000, maximumAge: 1000},
+    );
   };
   getMyObject = async () => {
     try {
       const jsonValue = await AsyncStorage.getItem('user');
       this.setState({user: JSON.parse(jsonValue).user});
-      console.log('HNM', jsonValue);
+      //console.log('HNM', jsonValue);
       return jsonValue != null ? JSON.parse(jsonValue) : null;
     } catch (e) {
       // read error
     }
 
-    console.log('Done.');
+    //console.log('Done.');
   };
   componentDidMount() {
-    console.log('HELLO --->', this.props.role);
+    //console.log('HELLO --->', this.props.role);
 
     this.getMyObject();
     this.getUserLocation();
     if (this.props?.role === 'driver') {
       //Alert.alert('GET');
+      console.log('driver details');
       this.props.getRides({driverId: this.props?.user.user?._id});
     }
     if (this.props?.role === 'user') {
@@ -81,23 +88,43 @@ class NavigationMenu extends Component {
     }
   }
   componentWillUnmount() {
+    // this.getMyObject();
     this.setState({user: null});
   }
-  componentWillReceiveProps = (props) => {
-    console.log('NAV', props.navigation);
-    // if (!props.navigation.state.isDrawerOpen) {
-    //   this.getMyObject();
-    //   if (this.props?.role === 'driver') {
-    //     this.props.getRides({driverId: this.state?.user?._id});
-    //   }
-    //   if (this.props?.role === 'user') {
-    //     console.log('KMM --->', this.state.user);
-    //     this.props.trackRide({userId: this.state.user._id});
-    //   }
-    // }
+
+  refresh = () => {
+    if (this.props?.role === 'driver') {
+      //Alert.alert('GET');
+      console.log('driver details', this.props?.user.user?._id);
+      this.props.getRides({driverId: this.props?.user.user?._id});
+    }
+    if (this.props?.role === 'user') {
+      console.log('KMM --->', this.props?.user.user._id, this.props.myRide);
+      this.props.trackRide({userId: this.props?.user.user._id});
+    }
   };
+  // componentWillReceiveProps = (props) => {
+  //console.log('NAV', props.navigation);
+  // if (!props.navigation.state.isDrawerOpen) {
+  //   this.getMyObject();
+  //   if (this.props?.role === 'driver') {
+  //     this.props.getRides({driverId: this.state?.user?._id});
+  //   }
+  //   if (this.props?.role === 'user') {
+  //     //console.log('KMM --->', this.state.user);
+  //     this.props.trackRide({userId: this.state.user._id});
+  //   }
+  // }
+  // };
   render() {
-    console.log('SER', this.props.myRide);
+    //console.log('SER', this.props.myRide);
+    console.log(
+      this.props?.role,
+      this.props.myRide?.routes,
+      'check',
+      this.props?.role === 'driver' && this.props.myRide?.routes?.length > 0,
+      this.props?.role === 'user' && this.props.myRide?.routes?.length > 0,
+    );
     return (
       <View
         onPress={() => this.props.navigation.closeDrawer()}
@@ -144,37 +171,42 @@ class NavigationMenu extends Component {
             style={{fontSize: 20}}>
             Home
           </Text>
-          <Text style={{fontSize: 20, marginTop: 15}}>Your Trips</Text>
-          {this.props?.role === 'driver' &&
-          this.props.myRide?.routes?.length > 0 ? (
-            <Text
-              onPress={() =>
-                this.props.navigation.navigate('Track', {
-                  user: this.state.user,
-                  myRide: this.props.myRide,
-                  location: this.state.location,
-                })
-              }
-              style={{fontSize: 20, marginTop: 15}}>
-              Current Ride
-            </Text>
-          ) : (
-            this.props?.role === 'user' &&
-            this.props.myRide?.routes?.length > 0 && (
+          {/* <Text style={{fontSize: 20, marginTop: 15}}>Your Trips</Text> */}
+
+          {!this.props?.myRide?.isCompleted &&
+            (this.props?.role === 'driver' &&
+            this.props.myRide?.routes?.length > 0 ? (
               <Text
                 onPress={() =>
-                  this.props.navigation.navigate('Book', {
+                  this.props.navigation.navigate('Track', {
                     user: this.state.user,
                     myRide: this.props.myRide,
                     location: this.state.location,
                   })
                 }
                 style={{fontSize: 20, marginTop: 15}}>
-                My Ride
+                Current Ride
               </Text>
-            )
-          )}
+            ) : (
+              this.props?.role === 'user' &&
+              this.props.myRide?.routes?.length > 0 && (
+                <Text
+                  onPress={() =>
+                    this.props.navigation.navigate('Book', {
+                      user: this.state.user,
+                      myRide: this.props.myRide,
+                      location: this.state.location,
+                    })
+                  }
+                  style={{fontSize: 20, marginTop: 15}}>
+                  My Ride
+                </Text>
+              )
+            ))}
           <Text style={{fontSize: 20, marginTop: 15}}>Help</Text>
+          <Text style={{fontSize: 20, marginTop: 15}} onPress={this.refresh}>
+            Refresh
+          </Text>
           <Text
             onPress={async () => {
               try {
@@ -191,7 +223,7 @@ class NavigationMenu extends Component {
                 // remove error
               }
 
-              console.log('Done.');
+              //console.log('Done.');
             }}
             style={{fontSize: 20, marginTop: 15}}>
             Sign out
@@ -220,7 +252,7 @@ class NavigationMenu extends Component {
 }
 
 const mapStateToProps = ({auth, rides}) => {
-  console.log('CHNAGE', rides);
+  //console.log('CHNAGE', rides);
   return {
     myRide: rides.myRide,
   };

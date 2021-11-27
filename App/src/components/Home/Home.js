@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
 });
 class Home extends Component {
   state = {
-    location: [0, 0],
+    location: [78.486671, 17.385044],
     query: '',
     search: null,
     book: true,
@@ -88,6 +88,9 @@ class Home extends Component {
     places: null,
     count: 1,
     routes: null,
+    driverLoc: [],
+    alloted: false,
+    accepted: false,
   };
   cameraRef = null;
   socket = setupSocket();
@@ -95,7 +98,7 @@ class Home extends Component {
   getUser = async () => {
     try {
       const user = await AsyncStorage.getItem('user');
-      //console.log(user);
+      ////console.log(user);
       if (user !== null) this.setState({user: JSON.parse(user)});
     } catch (e) {}
   };
@@ -110,30 +113,44 @@ class Home extends Component {
       );
 
       if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        Geolocation.getCurrentPosition((info) => {
-          console.log('HJjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj', info);
-          this.setState({
-            location: [info.coords.longitude, info.coords.latitude],
-          });
-        });
-        console.log('Location permission granted');
+        //console.log('granted   ');
+        Geolocation.getCurrentPosition(
+          (info) => {
+            console.log('HJjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj', info);
+            this.setState({
+              location: [info.coords.longitude, info.coords.latitude],
+            });
+            // this.setState({
+            //   location: [78.486671, 17.385044],
+            // });
+          },
+          (err) => {
+            //console.log(err, 'error');
+            Alert.alert(
+              'Info',
+              'Please Turn on your location and restart the app',
+            );
+          },
+          {enableHighAccuracy: true, timeout: 20000, maximumAge: 5000},
+        );
+        //console.log('Location permission granted');
       } else {
-        console.log('Location permission denied');
+        //console.log('Location permission denied');
       }
     } catch (err) {
-      console.warn(err);
+      //console.warn(err, 'err');
     }
   }
   componentDidMount() {
-    console.log('NAVIGATION -->', this.props.navigation);
+    //console.log('NAVIGATION -->', this.props.navigation);
     MapboxGL.setTelemetryEnabled(false);
     this.getUser();
     this.requestLocationPermission();
   }
 
   componentDidUpdate(prevProps, prevState) {
-    //console.log('UPDATE', this.state.user);
-    //console.log('RIDE', this.props.driverRides);
+    ////console.log('UPDATE', this.state.user);
+    ////console.log('RIDE', this.props.driverRides);
     if (prevState.user?.user._id !== this.state.user?.user._id) {
       this.props.getNearByAction({
         lat: this.state.location[1],
@@ -141,60 +158,73 @@ class Home extends Component {
       });
     }
     if (this.state.user?.role === 'user') {
-      this.socket.on('track', (msg) => {
-        console.log('SOCKET MESSAGE -->>', msg);
+      this.socket.on('track', (lat, long) => {
+        console.log('SOCKET MESSAGE -->>', lat, long);
+        // this.setState({driverLoc: [lat, long]});
+      });
+    }
+    if (this.state.user?.role === 'driver' && !this.state.alloted) {
+      this.socket.on('allot', (ride) => {
+        console.log('hello track 2', this.state.alloted);
+        this.setState({alloted: true});
+        this.props.newRideNotif({
+          ride: ride,
+        });
+        Alert.alert('NEW RIDE');
       });
     }
 
-    this.socket.on('allot', (ride) => {
-      this.props.newRideNotif({
-        ride: ride,
-      });
-      Alert.alert('NEW RIDE');
-    });
-
     if (prevProps.directions?.uuid !== this.props.directions?.uuid) {
       let arr = polyline.toGeoJSON(this.props.directions.routes[0].geometry, 5);
-      console.log('ARR', arr);
+      //console.log('ARR', arr);
       this.setState({routes: arr});
     }
   }
   getCurrentUserLocation = () => {
-    //console.log('aa');
+    ////console.log('aa');
     if (!this?.cameraRef) return;
     this.moveCamera();
   };
 
   moveCamera = (lat, long) => {
     if (!this?.cameraRef) return;
-    console.log('moving camera', lat, long);
+    //console.log('moving camera', lat, long);
     this.cameraRef.setCamera({centerCoordinate: this.state.location});
   };
 
   render() {
-    //console.log('render', this.props);
-    console.log('render', this.props.directions.uuid);
+    // console.log('cabs', this.props.cabs);
+    //console.log('render', this.props.directions.uuid);
     if (this.props.cabs) {
       this.props.cabs[0] = parseFloat(this.props.cabs[0]);
       this.props.cabs[1] = parseFloat(this.props.cabs[1]);
     }
     this.socket.emit('join', this.state.user?.user?._id);
-    this.socket.on('allot', (ride) => {
-      this.props.newRideNotif({
-        ride: ride,
+    this.socket.emit('update', this.state.location[1], this.state.location[0]);
+    if (this.state.user?.role === 'user' && !this.state.accepted) {
+      this.socket.on('accepted', (ride) => {
+        //console.log('SOCKET MESSAGE RIDE ACCEPTED -->>', ride);
+        this.setState({accepted: true});
+        this.props.newRideNotif({
+          ride: ride,
+        });
+        this.props.trackRide({userId: this.state.user?.user?._id});
+        Alert.alert('Wooh Ride Accepted');
       });
-      Alert.alert('NEW RIDE');
-    });
-    this.socket.on('accepted', (ride) => {
-      console.log('SOCKET MESSAGE RIDE ACCEPTED -->>', ride);
-      this.props.newRideNotif({
-        ride: ride,
+      this.socket.on('rejected', (msg) => {
+        Alert.alert('Sorry :( No Driver');
       });
-      Alert.alert('Wooh Ride Accepted');
-    });
-    this.socket.on('rejected', (msg) => {
-      Alert.alert('Sorry :( No Driver');
-    });
+    }
+    // else if (this.state.user?.role === 'driver') {
+    //   this.socket.on('allot', (ride) => {
+    //     console.log('hello track 1');
+    //     this.props.newRideNotif({
+    //       ride: ride,
+    //     });
+    //     Alert.alert('NEW RIDE');
+    //   });
+    // }
+    console.log(this.props.myRide, 'myRide');
     return (
       <View style={styles.page}>
         <View style={styles.container}>
@@ -217,7 +247,8 @@ class Home extends Component {
               />
             </TouchableOpacity>
           )}
-          {this.props.myRide?.routes?.length > 0 &&
+          {this.props.myRide?.routes?.length &&
+            !this.props.myRide.isCompleted &&
             this.state.user?.role === 'driver' && (
               <TouchableOpacity
                 style={{
@@ -261,6 +292,8 @@ class Home extends Component {
           <MapboxGL.MapView
             logoEnabled={false}
             compassEnabled
+            zoomEnabled
+            pitchEnabled
             style={styles.map}>
             <MapboxGL.UserLocation visible />
 
@@ -297,7 +330,7 @@ class Home extends Component {
                 />
               </MapboxGL.ShapeSource>
             )}
-            {this.state.routes !== null && (
+            {this.state.routes !== null && this.props.showRideDetails && (
               <MapboxGL.ShapeSource id="line1" shape={this.state.routes}>
                 <MapboxGL.LineLayer
                   id="linelayer1"
@@ -331,6 +364,7 @@ class Home extends Component {
             <CreateRide
               myLocation={this.state.location}
               user={this.state.user?.user}
+              driverLoc={this.state.driverLoc}
             />
           )}
         </View>
@@ -340,7 +374,7 @@ class Home extends Component {
 }
 
 const mapStateToProps = ({rides, directions}) => {
-  //console.log(rides);
+  ////console.log(rides);
   return {
     cabs: rides.cabs.nearestPoints,
     isRideCreated: rides.isRideCreated,

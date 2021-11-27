@@ -40,7 +40,7 @@ class CreateRide extends Component {
     },
   };
   componentDidMount() {
-    console.log('MY LOCATION', this.props.directions);
+    //console.log('MY LOCATION', this.props.directions);
     // this.props.getDirections({
     //   coordinates: `${this.props.bookingDetails.location[0]},${this.props.bookingDetails.location[1]};${this.props.myLocation[0]},${this.props.myLocation[1]}`,
     // });
@@ -85,19 +85,26 @@ class CreateRide extends Component {
             color="#333"
             title="Book"
             onPress={() => {
-              this.props.bookRide({
-                drop_lat: this.props.directions?.waypoints[0].location[1],
-                drop_lng: this.props.directions?.waypoints[0].location[0],
-                pickup_lat: this.props.myLocation[1],
-                pickup_lng: this.props.myLocation[0],
-                userId: this.props.user?._id,
-                category: 'share',
-                weight: this.state.weight,
-                kms: `${parseFloat(
-                  this.props.directions?.routes[0]?.distance / 1000,
-                ).toFixed(2)}`,
-                payment_type: 'cash',
+              this.props.getNearByAction({
+                lat: this.props.myLocation[1],
+                long: this.props.myLocation[0],
               });
+              this.props?.cabs
+                ? this.props.bookRide({
+                    drop_lat: this.props.directions?.waypoints[0].location[1],
+                    drop_lng: this.props.directions?.waypoints[0].location[0],
+                    pickup_lat: this.props.myLocation[1],
+                    pickup_lng: this.props.myLocation[0],
+                    userId: this.props.user?._id,
+                    category: 'share',
+                    weight: this.state.weight,
+                    kms: `${parseFloat(
+                      this.props.directions?.routes[0]?.distance / 1000,
+                    ).toFixed(2)}`,
+                    payment_type: 'online',
+                    driverLoc: this.props.driverLoc,
+                  })
+                : Alert.alert('Info', 'No Cabs');
             }}
           />
         </View>
@@ -109,12 +116,17 @@ class CreateRide extends Component {
   }
 }
 
-const mapStateToProps = ({directions}) => {
+const mapStateToProps = ({rides, directions}) => {
   return {
     directions: directions.directions,
+    cabs: rides.cabs.nearestPoints,
   };
 };
 
 const mapDispatchToProps = {};
 
-export default connect(mapStateToProps, {bookRide, getDirections})(CreateRide);
+export default connect(mapStateToProps, {
+  bookRide,
+  getDirections,
+  getNearByAction,
+})(CreateRide);

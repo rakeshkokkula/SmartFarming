@@ -9,6 +9,7 @@ export const DECIDE_RIDE = 'DECIDE_RIDE';
 export const CLOSE_RIDE = 'CLOSE_RIDE';
 export const NEW_RIDE_NOTIF = 'NEW_RIDE_NOTIF';
 export const RIDE_ACCEPTED_NOTIF = 'RIDE_ACCEPTED_NOTIF';
+export const PAYMENT_RIDE = 'PAYMENT_RIDE';
 
 export const getNearByAction = (payload) => ({
   type: GET_NEARBY_RIDES,
@@ -42,6 +43,11 @@ export const getRides = (payload) => ({
 
 export const completeRide = (payload) => ({
   type: COMPLETE_RIDE,
+  payload,
+});
+
+export const paymentRide = (payload) => ({
+  type: PAYMENT_RIDE,
   payload,
 });
 

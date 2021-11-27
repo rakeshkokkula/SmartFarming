@@ -52,6 +52,8 @@ const rideSchema = mongoose.Schema({
       },
       address: String,
       weight: String,
+      paymentStatus: String,
+      paymentId: String,
     },
   ],
   routes: [

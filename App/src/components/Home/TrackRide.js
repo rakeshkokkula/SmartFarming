@@ -86,7 +86,7 @@ class BookRide extends Component {
 
   componentDidMount() {
     MapboxGL.setTelemetryEnabled(false);
-    console.log('PROPS', this.props.route.params);
+    //console.log('PROPS', this.props.route.params);
     let loc = '';
     loc =
       loc +
@@ -97,7 +97,7 @@ class BookRide extends Component {
         loc = loc + `${long},${lat};`;
       });
       loc = loc.slice(0, -1);
-      console.log('CON', loc);
+      // console.log('CON', loc);
     }
 
     this.socket.emit('join', this.props.route.params?.user._id);
@@ -107,15 +107,22 @@ class BookRide extends Component {
     //this.getUser();
     this.props.getRoute({locations: loc});
 
-    Geolocation.getCurrentPosition((info) => {
-      console.log('HJ', info);
-      this.setState({
-        location: [info.coords.longitude, info.coords.latitude],
-      });
-    });
+    Geolocation.getCurrentPosition(
+      (info) => {
+        //console.log('HJ', info);
+        this.setState({
+          location: [info.coords.longitude, info.coords.latitude],
+        });
+      },
+      (err) => {
+        //console.log(err, 'error');
+      },
+      {enableHighAccuracy: true, timeout: 20000, maximumAge: 5000},
+    );
   }
   componentDidUpdate(prevProps, prevState) {
-    //console.log('LOCATIONS', this.props.routes);
+    ////console.log('LOCATIONS', this.props.routes);
+    let loc = '';
     if (prevProps.myRide?.routes?.length < this.props.myRide?.routes?.length) {
       this.props.myRide?.routes?.forEach((route) => {
         let {lat, long} = route;
@@ -123,10 +130,10 @@ class BookRide extends Component {
       });
       loc = loc.slice(0, -1);
       this.setState({locations: loc});
-      console.log('CON--> 2', loc);
+      //console.log('CON--> 2', loc);
     }
     this.socket.on('track', (lat, long) => {
-      //console.log('AA RAHA', lat, long);
+      console.log('AA RAHA', lat, long);
     });
     if (this.state.locations !== null) {
       this.props.getRoute({locations: this.state.locations});
@@ -140,7 +147,7 @@ class BookRide extends Component {
         loc = loc + `${long},${lat};`;
       });
       loc = loc.slice(0, -1);
-      console.log('ROU', loc);
+      //console.log('ROU', loc);
 
       this.props.getRoute({locations: loc});
       //this.setState({locations: null});
@@ -150,7 +157,7 @@ class BookRide extends Component {
       this.props.routes?.routes[0] !== undefined
     ) {
       let arr = polyline.toGeoJSON(this.props.routes.routes[0].geometry, 6);
-      console.log('ARR', arr);
+      //console.log('ARR', arr);
       this.setState({route: arr});
     }
   }
@@ -192,13 +199,19 @@ class BookRide extends Component {
       ],
       waypoints: wayPoints,
     };
-    console.log('MAPS DATA ---->', data);
+    //console.log('MAPS DATA ---->', data);
     getDirections(data);
   };
 
   renderRideCard = () => {
     const {myRide} = this.props;
-    console.log('RIDE --H', myRide);
+    //console.log('RIDE --H', myRide);
+    // console.log(
+    //   this.props.route?.params?.user.uid,
+    //   'driver_id',
+    //   this.props?.user,
+    //   this.props.route?.params?.user?.user,
+    // );
     return (
       <Card
         containerStyle={{
@@ -222,7 +235,7 @@ class BookRide extends Component {
           {myRide !== null &&
             myRide?.customers?.map((customer, index) => {
               if (!customer.isRejected && !customer.isCompleted) {
-                console.log('RIDE CUS', customer);
+                //console.log('RIDE CUS', customer);
                 return (
                   <View key={index}>
                     <View
@@ -391,7 +404,7 @@ class BookRide extends Component {
               }}
               onPress={() =>
                 this.props.getRides({
-                  driverId: this.props.route.params?.user._id,
+                  driverId: this.props.route.params?.user.uid,
                 })
               }
               title="GET RIDES"
@@ -408,8 +421,12 @@ class BookRide extends Component {
                 width: 40,
               }}
               onPress={() => {
+                console.log(this.props.route.params?.user.uid, 'driver_id');
                 this.props.closeRide({
-                  driverId: this.props.route.params?.user._id,
+                  driverId: this.props.route?.params?.user?.uid,
+                });
+                this.props.getRides({
+                  driverId: this.props.route.params?.user.uid,
                 });
                 this.props.navigation.navigate('Home');
               }}
@@ -421,7 +438,7 @@ class BookRide extends Component {
     );
   };
   render() {
-    console.log('ROUTES', this.props.myRide?.customers);
+    //console.log('ROUTES', this.props.myRide?.customers);
     const {myRide} = this.props;
     return (
       <View style={styles.page}>
@@ -434,7 +451,7 @@ class BookRide extends Component {
             <MapboxGL.UserLocation
               onUpdate={(loc) => {
                 if (this.props.myRide?.routes) {
-                  //console.log('CALL', loc.coords);
+                  ////console.log('CALL', loc.coords);
                   // this.setState({
                   //   cabLoc: [loc.coords.longitude, loc.coords.latitude],
                   // });
@@ -464,12 +481,13 @@ class BookRide extends Component {
               <Image source={cab} />
             </MapboxGL.MarkerView> */}
             {this.props.myRide?.routes?.map((route, index) => {
-              console.log('lat long', route);
+              //console.log('lat long', route);
               if (route.state === 'pickup') {
+                console.log(route);
                 return (
                   <MapboxGL.MarkerView
                     key={index}
-                    coordinate={[route.long, route.lat]}>
+                    coordinate={[+route.long, +route.lat]}>
                     <Image source={pickup} />
                   </MapboxGL.MarkerView>
                 );
@@ -477,7 +495,7 @@ class BookRide extends Component {
                 return (
                   <MapboxGL.MarkerView
                     key={index}
-                    coordinate={[route.long, route.lat]}>
+                    coordinate={[+route.long, +route.lat]}>
                     <Image source={drop} />
                   </MapboxGL.MarkerView>
                 );
@@ -517,7 +535,7 @@ class BookRide extends Component {
 }
 
 const mapStateToProps = ({auth, rides}) => {
-  console.log('DD', rides.getRoute);
+  //console.log('DD', rides.getRoute);
   return {
     user: auth.user,
     myRide: rides.myRide,
