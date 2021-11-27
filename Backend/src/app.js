@@ -39,7 +39,7 @@ app.set("view engine", "ejs");
 
 mongoose
   .connect(
-    "mongodb+srv://carpooling03:dXc2mY6gp3d6vPd@carpooling.84jtc.mongodb.net/smartFarming?retryWrites=true&w=majority",
+    "your mogo url",
     { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false }
   )
   .then(() => {
