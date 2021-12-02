@@ -41,13 +41,13 @@ module.exports = (socketio) => {
           let ride = await Ride.findOne({
             "customers._id": userId,
             "customers.isAccepted": true,
-            "customers.isCompleted": true,
+            "customers.isCompleted": false,
           }).populate("driver_id");
           if (ride) {
             console.log("user1 track", ride);
             socketio
               .to(userId.toString())
-              .emit("track", ride.driver_id.lat, ride.driver_id.long);
+              .emit("track", ride.driver_id?.lat, ride.driver_id?.long);
           }
         }
       }

@@ -135,25 +135,30 @@ module.exports = (socketio) => {
   const trackRide = (req, res) => {
     const { userId } = req.query;
     console.log("TRACKKK", userId);
-    Ride.findOne({
-      customers: {
-        $elemMatch: {
-          _id: userId,
-          isRejected: false,
-          isCompleted: false,
-          isAccepted: true,
+    if (userId) {
+      Ride.findOne({
+        isCompleted: false,
+        customers: {
+          $elemMatch: {
+            _id: userId,
+            isRejected: false,
+            isCompleted: false,
+            isAccepted: true,
+          },
         },
-      },
-    })
-      .populate("driver_id")
-      .then((err, ride) => {
-        console.log("user", err, ride);
+      })
+        .populate("driver_id")
+        .then((err, ride) => {
+          console.log("user", err, ride);
 
-        if (err) res.send(err);
-        if (ride) {
-          res.send(ride);
-        }
-      });
+          if (err) res.send(err);
+          if (ride) {
+            res.send(ride);
+          }
+        });
+    } else {
+      res.send(null);
+    }
   };
 
   const getRideForDriver = async (req, res) => {
@@ -161,6 +166,7 @@ module.exports = (socketio) => {
     console.log(driverId, "driverId");
     Ride.findOne({
       driver_id: ObjectID(driverId),
+      isCompleted: false,
       customers: {
         $elemMatch: {
           isRejected: false,

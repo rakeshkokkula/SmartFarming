@@ -124,6 +124,7 @@ class NavigationMenu extends Component {
       'check',
       this.props?.role === 'driver' && this.props.myRide?.routes?.length > 0,
       this.props?.role === 'user' && this.props.myRide?.routes?.length > 0,
+      this.props?.myRide?.isCompleted,
     );
     return (
       <View

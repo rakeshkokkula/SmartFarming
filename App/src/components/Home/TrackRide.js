@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
 
 class BookRide extends Component {
   state = {
-    location: [],
+    location: this.props?.route?.params?.location || [78.486671, 17.385044],
     route: null,
     user: null,
     rideDetails: null,
@@ -83,6 +83,47 @@ class BookRide extends Component {
     showRides: null,
   };
   socket = setupSocket();
+
+  async requestLocationPermission() {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        {
+          title: 'Location Permission',
+          message: 'MyMapApp needs access to your location',
+        },
+      );
+
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        Geolocation.getCurrentPosition(
+          (info) => {
+            console.log('HJjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj', info);
+            this.setState({
+              location: [+info.coords.longitude, +info.coords.latitude],
+            });
+            // this.setState({
+            //   location: [78.486671, 17.385044],
+            // });
+          },
+          (err) => {
+            console.log(err, 'error');
+            Alert.alert(
+              'Info',
+              'Please Turn on your location and restart the app',
+            );
+          },
+          {enableHighAccuracy: true, timeout: 20000, maximumAge: 5000},
+        );
+        console.log('Location permission granted');
+      } else {
+        Alert.alert('Info', 'Please Turn on your location and restart the app');
+        console.log('Location permission denied');
+      }
+    } catch (err) {
+      Alert.alert('Info', 'Please Turn on your location and restart the app');
+      //console.warn(err, 'err');
+    }
+  }
 
   componentDidMount() {
     MapboxGL.setTelemetryEnabled(false);
@@ -106,19 +147,20 @@ class BookRide extends Component {
     //this.props.get({driverId: this.props.route.params?.user._id});
     //this.getUser();
     this.props.getRoute({locations: loc});
+    this.requestLocationPermission();
 
-    Geolocation.getCurrentPosition(
-      (info) => {
-        //console.log('HJ', info);
-        this.setState({
-          location: [info.coords.longitude, info.coords.latitude],
-        });
-      },
-      (err) => {
-        //console.log(err, 'error');
-      },
-      {enableHighAccuracy: true, timeout: 20000, maximumAge: 5000},
-    );
+    // Geolocation.getCurrentPosition(
+    //   (info) => {
+    //     //console.log('HJ', info);
+    //     this.setState({
+    //       location: [info.coords.longitude, info.coords.latitude],
+    //     });
+    //   },
+    //   (err) => {
+    //     //console.log(err, 'error');
+    //   },
+    //   {enableHighAccuracy: true, timeout: 20000, maximumAge: 5000},
+    // );
   }
   componentDidUpdate(prevProps, prevState) {
     ////console.log('LOCATIONS', this.props.routes);
@@ -483,7 +525,7 @@ class BookRide extends Component {
             {this.props.myRide?.routes?.map((route, index) => {
               //console.log('lat long', route);
               if (route.state === 'pickup') {
-                console.log(route);
+                console.log(route, this.state.location);
                 return (
                   <MapboxGL.MarkerView
                     key={index}

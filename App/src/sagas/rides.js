@@ -121,7 +121,7 @@ function* trackRide({payload}) {
       });
     }
   } catch (err) {
-    //console.log('RIDE TRACK ERROR', err);
+    console.log('RIDE TRACK ERROR', err);
     yield put({
       type: TRACK_RIDE + '_FAILURE',
     });

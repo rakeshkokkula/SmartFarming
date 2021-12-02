@@ -21,6 +21,8 @@ import PropTypes from 'prop-types';
 import {connect} from 'react-redux';
 import vehicle from '../../assets/vehicle.png';
 import {bookRide, rideStatus, trackRide, getRides} from '../../actions/rides';
+import {hideRideDetails} from '../../actions/directions';
+import {hidePlaces} from '../../actions/places';
 
 const styles = StyleSheet.create({
   cardBody: {
@@ -89,22 +91,26 @@ class CreateRide extends Component {
                 lat: this.props.myLocation[1],
                 long: this.props.myLocation[0],
               });
-              this.props?.cabs
-                ? this.props.bookRide({
-                    drop_lat: this.props.directions?.waypoints[0].location[1],
-                    drop_lng: this.props.directions?.waypoints[0].location[0],
-                    pickup_lat: this.props.myLocation[1],
-                    pickup_lng: this.props.myLocation[0],
-                    userId: this.props.user?._id,
-                    category: 'share',
-                    weight: this.state.weight,
-                    kms: `${parseFloat(
-                      this.props.directions?.routes[0]?.distance / 1000,
-                    ).toFixed(2)}`,
-                    payment_type: 'online',
-                    driverLoc: this.props.driverLoc,
-                  })
-                : Alert.alert('Info', 'No Cabs');
+              if (this.props?.cabs) {
+                this.props.bookRide({
+                  drop_lat: this.props.directions?.waypoints[0].location[1],
+                  drop_lng: this.props.directions?.waypoints[0].location[0],
+                  pickup_lat: this.props.myLocation[1],
+                  pickup_lng: this.props.myLocation[0],
+                  userId: this.props.user?._id,
+                  category: 'share',
+                  weight: this.state.weight,
+                  kms: `${parseFloat(
+                    this.props.directions?.routes[0]?.distance / 1000,
+                  ).toFixed(2)}`,
+                  payment_type: 'online',
+                  driverLoc: this.props.driverLoc,
+                });
+                this.props.hideRideDetails();
+                this.props.hidePlaces();
+              } else {
+                Alert.alert('Info', 'No Cabs');
+              }
             }}
           />
         </View>
@@ -129,4 +135,6 @@ export default connect(mapStateToProps, {
   bookRide,
   getDirections,
   getNearByAction,
+  hideRideDetails,
+  hidePlaces,
 })(CreateRide);

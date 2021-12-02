@@ -117,6 +117,24 @@ class BookRide extends Component {
     }
   }
 
+  onCompleted = (ride) => {
+    this.props.navigation.navigate('Home');
+    this.props.trackRide({userId: this.props?.user?.user?._id});
+    Alert.alert('Info', 'Ride Completed');
+  };
+
+  onTrack = (lat, long, prevState) => {
+    if (
+      (this.state.cabLoc[0] !== undefined &&
+        prevState?.cabLoc[0] !== this.state.cabLoc[0] &&
+        prevState?.cabLoc[1] !== this.state.cabLoc[1]) ||
+      this.state.cabLoc.length === 0
+    ) {
+      //console.log('TRACK', lat, long);
+      this.setState({cabLoc: [+long, +lat]});
+    }
+  };
+
   componentDidMount() {
     MapboxGL.setTelemetryEnabled(false);
     //console.log('PROPS', this.props.myRide);
@@ -167,23 +185,12 @@ class BookRide extends Component {
     //   socket.emit('update', this.props.myRide._id, '17.3930', '78.4730');
     // }
     this.socket.emit('join', this.state.user?._id);
-    this.socket.on('completed', (ride) => {
-      this.props.navigation.navigate('Home');
-      this.props.trackRide({userId: this.props?.user?.user?._id});
-      Alert.alert('Info', 'Ride Completed');
-    });
-    this.socket.on('track', (lat, long) => {
-      if (
-        (this.state.cabLoc[0] !== undefined &&
-          prevState.cabLoc[0] !== this.state.cabLoc[0] &&
-          prevState.cabLoc[1] !== this.state.cabLoc[1]) ||
-        this.state.cabLoc.length === 0
-      ) {
-        //console.log('TRACK', lat, long);
-        this.setState({cabLoc: [+long, +lat]});
-      }
-    });
-    if (this.state.locations !== null) {
+    this.socket.on('completed', this.onCompleted);
+    this.socket.on('track', (lat, long) => this.onTrack(lat, long, prevState));
+    if (
+      this.state.locations !== null &&
+      prevState?.locations?.toString() !== this.state?.locations?.toString()
+    ) {
       this.props.getRoute({locations: this.state.locations});
       this.setState({locations: null});
     }
@@ -196,9 +203,15 @@ class BookRide extends Component {
       this.setState({route: arr});
     }
   }
+
+  componentWillUnmount() {
+    this.socket.off('completed', this.onCompleted);
+    this.socket.off('track', this.onTrack);
+  }
   render() {
     //console.log('ROUTES', this.props.myRide?.customers);
     const {myRide} = this.props;
+    // console.log(myRide, 'myRide');
     return (
       <View style={styles.page}>
         <View style={styles.container}>
@@ -219,12 +232,10 @@ class BookRide extends Component {
               source={menu}
             />
           </TouchableOpacity>
-          {this.props.myRide?.customers.filter(
-            (i) => i._id === this.state.user?._id,
-          ).length &&
-          !this.props.myRide?.customers.find(
-            (i) => i._id === this.state.user?._id,
-          ).paymentStatus &&
+          {myRide?.customers?.filter((i) => i._id === this.state.user?._id)
+            ?.length &&
+          !myRide?.customers?.find((i) => i._id === this.state.user?._id)
+            ?.paymentStatus &&
           !this.state.paymentSuccess ? (
             <TouchableOpacity
               style={{
@@ -242,7 +253,7 @@ class BookRide extends Component {
                 borderRadius: 10,
               }}
               onPress={() => {
-                const details = this.props.myRide?.customers.filter(
+                const details = myRide?.customers.filter(
                   (i) => i._id === this.state.user?._id,
                 );
                 const data = details ? details[0] : {};
@@ -266,7 +277,7 @@ class BookRide extends Component {
                     this.props.paymentRide({
                       userId: this.state.user?._id,
                       paymentId: data.razorpay_payment_id,
-                      rideId: this.props.myRide._id,
+                      rideId: myRide._id,
                     });
                     Alert.alert('Success', 'Payment Success');
                     // handle success
@@ -297,7 +308,7 @@ class BookRide extends Component {
               borderRadius: 10,
             }}
             onPress={() => {
-              Linking.openURL(`tel:${this.props.myRide?.driver_id.phoneNo}`);
+              Linking.openURL(`tel:${myRide?.driver_id?.phoneNo}`);
             }}>
             <Text style={{color: '#fff'}}>call driver</Text>
           </TouchableOpacity>
@@ -318,12 +329,12 @@ class BookRide extends Component {
             <MapboxGL.MarkerView
               coordinate={
                 this.state.cabLoc[0] === undefined
-                  ? [+myRide?.driver_id.long, +myRide?.driver_id.lat]
+                  ? [+myRide?.driver_id?.long, +myRide?.driver_id?.lat]
                   : this.state.cabLoc
               }>
               <Image source={cab} />
             </MapboxGL.MarkerView>
-            {this.props.myRide?.routes.map((route, index) => {
+            {myRide?.routes.map((route, index) => {
               //console.log('lat long', route);
               if (route.state === 'pickup') {
                 return (
@@ -371,7 +382,7 @@ class BookRide extends Component {
               Ride Detail
             </Card.Title>
             <Card.Divider style={{backgroundColor: '#000'}} />
-            {this.props.myRide?.customers.map((customer) => {
+            {myRide?.customers.map((customer) => {
               ////console.log('HNM', this.state.user);
               if (customer._id === this.state.user?._id) {
                 return (
