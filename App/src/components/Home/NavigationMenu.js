@@ -118,14 +118,14 @@ class NavigationMenu extends Component {
   // };
   render() {
     //console.log('SER', this.props.myRide);
-    console.log(
-      this.props?.role,
-      this.props.myRide?.routes,
-      'check',
-      this.props?.role === 'driver' && this.props.myRide?.routes?.length > 0,
-      this.props?.role === 'user' && this.props.myRide?.routes?.length > 0,
-      this.props?.myRide?.isCompleted,
-    );
+    // console.log(
+    //   this.props?.role,
+    //   this.props.myRide?.routes,
+    //   'check',
+    //   this.props?.role === 'driver' && this.props.myRide?.routes?.length > 0,
+    //   this.props?.role === 'user' && this.props.myRide?.routes?.length > 0,
+    //   this.props?.myRide?.isCompleted,
+    // );
     return (
       <View
         onPress={() => this.props.navigation.closeDrawer()}

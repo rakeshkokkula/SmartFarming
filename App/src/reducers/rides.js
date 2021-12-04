@@ -108,7 +108,8 @@ const rides = (state = initialState, action) => {
     case `${COMPLETE_RIDE}_SUCCESS`:
       return {
         ...state,
-        myRide: data,
+        myRide: null,
+        //previously myRide: data
       };
     case `${COMPLETE_RIDE}_FAILURE`:
       return {
@@ -150,7 +151,7 @@ const rides = (state = initialState, action) => {
         myRide: ride,
       };
     case NEW_RIDE_NOTIF:
-      //console.log('YAYYYYY----', payload);
+      console.log('YAYYYYY----', payload);
       return {
         ...state,
         myRide: {...payload.ride},

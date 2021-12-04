@@ -9,7 +9,7 @@ const ObjectID = require("mongodb").ObjectID;
 module.exports = (socketio) => {
   const createBooking = async (req, res) => {
     try {
-      console.log("BODY", req.body);
+      // console.log("BODY", req.body);
       const {
         pickup_lat,
         pickup_lng,
@@ -33,12 +33,12 @@ module.exports = (socketio) => {
         Driver.find({ online: true }, async (err, drivers) => {
           // console.log(drivers, "drivers");
           drivers.forEach(async (driver) => {
-            console.log(driver, "driver");
+            // console.log(driver, "driver");
             let driver_loc = [17.385044, 78.486671];
             if (driverLoc?.length) {
-              driver_loc = driverLoc;
+              driver_loc = [+driverLoc[0], +driverLoc[1]];
             }
-            let { lat = driver_loc, long = driver_loc } = driver;
+            let { lat = driver_loc[0], long = driver_loc[1] } = driver;
 
             console.log(lat, long, "required");
             locations[0].push(driver);
@@ -53,18 +53,18 @@ module.exports = (socketio) => {
           let rideExists = await Ride.exists({
             _id: locations[0][nearest.properties.featureIndex].onGoingRideId,
           });
-          console.log(
-            locations[0][nearest.properties.featureIndex],
-            rideExists
-          );
+          // console.log(
+          //   locations[0][nearest.properties.featureIndex],
+          //   rideExists
+          // );
 
           if (
             rideExists &&
             locations[0][nearest.properties.featureIndex].online
           ) {
             console.log(
-              "Ongoing ride",
-              locations[0][nearest.properties.featureIndex]
+              "Ongoing ride"
+              // locations[0][nearest.properties.featureIndex]
             );
             let ride = locations[0][nearest.properties.featureIndex];
 
@@ -106,7 +106,7 @@ module.exports = (socketio) => {
               });
             });
           } else {
-            console.log("new ride", nearest);
+            console.log("new ride");
             let ride = createBookingDoc(req);
             console.log(
               locations[0][nearest.properties.featureIndex]._id,
@@ -149,7 +149,7 @@ module.exports = (socketio) => {
       })
         .populate("driver_id")
         .then((err, ride) => {
-          console.log("user", err, ride);
+          console.log("track user");
 
           if (err) res.send(err);
           if (ride) {
@@ -165,7 +165,7 @@ module.exports = (socketio) => {
     const { driverId } = req.query;
     console.log(driverId, "driverId");
     Ride.findOne({
-      driver_id: ObjectID(driverId),
+      driver_id: driverId,
       isCompleted: false,
       customers: {
         $elemMatch: {
@@ -176,7 +176,7 @@ module.exports = (socketio) => {
     })
       .populate("customers._id")
       .exec((err, ride) => {
-        console.log("DRIVER", ride, err);
+        console.log("DRIVER", err);
         if (err) res.send(err);
         if (ride === null) res.status(500).send("no rides");
         else res.send(ride);
@@ -185,12 +185,12 @@ module.exports = (socketio) => {
 
   const rideDecide = (req, res) => {
     const { rideId, userId, accept, driverId } = req.body;
-    console.log("RIDE DECIDE", req.body);
+    console.log("RIDE DECIDE");
     Driver.findOneAndUpdate(
       { _id: driverId },
       { onGoingRideId: rideId },
       { new: true }
-    ).then((err, ride) => console.log(ride, err));
+    ).then((err, ride) => console.log(err));
     if (accept) {
       Ride.findOneAndUpdate(
         { _id: rideId, "customers._id": userId },
@@ -203,7 +203,7 @@ module.exports = (socketio) => {
         { new: true }
       ).then((ride, err) => {
         socketio.to(userId.toString()).emit("accepted", { message: ride });
-        console.log(err, ride);
+        console.log(err);
         if (err) {
           res.send(err);
         }
@@ -220,7 +220,7 @@ module.exports = (socketio) => {
         },
         { new: true }
       ).then((ride, err) => {
-        console.log(ride, err);
+        console.log(err);
         // socketio.to(userId.toString()).emit("accepted", { message: ride });
         socketio
           .to(userId.toString())
@@ -254,9 +254,9 @@ module.exports = (socketio) => {
     var targetPoint = turf.point([parseFloat(lat), parseFloat(long)], {
       "marker-color": "#0F0",
     });
-    console.log(targetPoint, "target");
+    console.log("target");
     Driver.find({ online: true }, (err, drivers) => {
-      console.log(drivers, "drivers", lat, long, err);
+      // console.log(drivers, "drivers", lat, long, err);
       drivers.forEach((driver) => {
         let { lat, long } = driver;
         console.log(lat, long, "hgh");
@@ -272,7 +272,7 @@ module.exports = (socketio) => {
         nearest = turf.nearestPoint(targetPoint, points);
         //console.log("NearBy", locations[0][nearest.properties.featureIndex]);
       });
-      console.log(nearest, "nearest");
+      console.log("nearest");
       if (err) {
         res.status(500).json({
           nearestPoints: "no nearby",
@@ -287,7 +287,7 @@ module.exports = (socketio) => {
 
   const completeRide = async (req, res) => {
     let { rideId, userId, last } = req.body;
-    console.log(req.body);
+    console.log("complete ride");
     let ride = await Ride.findOneAndUpdate(
       { _id: rideId, "customers._id": userId },
       { $set: { "customers.$.isCompleted": true } },
@@ -300,7 +300,7 @@ module.exports = (socketio) => {
       );
     }
     if (ride) {
-      console.log(ride);
+      // console.log(ride);
       socketio.to(userId.toString()).emit("completed", ride);
       res.send(ride);
     } else res.json({ error: "error" });
@@ -355,7 +355,7 @@ module.exports = (socketio) => {
 
   const paymentRide = (req, res) => {
     const { userId, rideId, paymentId } = req.query;
-    console.log("PAYMENT", req.query);
+    // console.log("PAYMENT", req.query);
     Ride.findOneAndUpdate(
       { _id: rideId, "customers._id": userId },
       {
@@ -368,7 +368,7 @@ module.exports = (socketio) => {
     )
       .populate("driver_id")
       .then((err, ride) => {
-        console.log("payment", err, ride);
+        // console.log("payment", err, ride);
 
         if (err) res.send(err);
         if (ride) {

@@ -75,6 +75,7 @@ class BookRide extends Component {
     locations: null,
     cabLoc: [],
     paymentSuccess: false,
+    completed: false,
   };
   socket = setupSocket();
 
@@ -117,24 +118,6 @@ class BookRide extends Component {
     }
   }
 
-  onCompleted = (ride) => {
-    this.props.navigation.navigate('Home');
-    this.props.trackRide({userId: this.props?.user?.user?._id});
-    Alert.alert('Info', 'Ride Completed');
-  };
-
-  onTrack = (lat, long, prevState) => {
-    if (
-      (this.state.cabLoc[0] !== undefined &&
-        prevState?.cabLoc[0] !== this.state.cabLoc[0] &&
-        prevState?.cabLoc[1] !== this.state.cabLoc[1]) ||
-      this.state.cabLoc.length === 0
-    ) {
-      //console.log('TRACK', lat, long);
-      this.setState({cabLoc: [+long, +lat]});
-    }
-  };
-
   componentDidMount() {
     MapboxGL.setTelemetryEnabled(false);
     //console.log('PROPS', this.props.myRide);
@@ -157,9 +140,10 @@ class BookRide extends Component {
       locations: loc,
       location: locate,
     });
-    console.log(locate, 'locate');
+    // console.log(locate, 'locate');
     //this.props.trackRide({userId: this.props.route.params.user.user._id});
     this.requestLocationPermission();
+    this.socket.emit('join', this.state.user?._id);
     // Geolocation.getCurrentPosition(
     //   (info) => {
     //     console.log('HJ', info);
@@ -184,9 +168,26 @@ class BookRide extends Component {
     //   socket.emit('join', this.state.user.user._id);
     //   socket.emit('update', this.props.myRide._id, '17.3930', '78.4730');
     // }
-    this.socket.emit('join', this.state.user?._id);
-    this.socket.on('completed', this.onCompleted);
-    this.socket.on('track', (lat, long) => this.onTrack(lat, long, prevState));
+
+    this.socket.on('completed', (ride) => {
+      if (!this.state.completed) {
+        this.props.navigation.navigate('Home');
+        this.props.trackRide({userId: this.props?.user?.user?._id});
+        this.setState({completed: true});
+      }
+      Alert.alert('Info', 'Ride Completed');
+    });
+    this.socket.on('track', (lat, long) => {
+      if (
+        (this.state.cabLoc[0] !== undefined &&
+          prevState?.cabLoc[0] !== this.state.cabLoc[0] &&
+          prevState?.cabLoc[1] !== this.state.cabLoc[1]) ||
+        this.state.cabLoc.length === 0
+      ) {
+        //console.log('TRACK', lat, long);
+        this.setState({cabLoc: [+long, +lat]});
+      }
+    });
     if (
       this.state.locations !== null &&
       prevState?.locations?.toString() !== this.state?.locations?.toString()
@@ -204,10 +205,10 @@ class BookRide extends Component {
     }
   }
 
-  componentWillUnmount() {
-    this.socket.off('completed', this.onCompleted);
-    this.socket.off('track', this.onTrack);
-  }
+  // componentWillUnmount() {
+  //   this.socket.off('completed', this.onCompleted);
+  //   this.socket.off('track', this.onTrack);
+  // }
   render() {
     //console.log('ROUTES', this.props.myRide?.customers);
     const {myRide} = this.props;
@@ -345,7 +346,7 @@ class BookRide extends Component {
                   </MapboxGL.MarkerView>
                 );
               } else {
-                console.log(route, 'route');
+                // console.log(route, 'route');
                 return (
                   <MapboxGL.MarkerView
                     key={route._id}

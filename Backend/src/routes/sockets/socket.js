@@ -44,7 +44,9 @@ module.exports = (socketio) => {
             "customers.isCompleted": false,
           }).populate("driver_id");
           if (ride) {
-            console.log("user1 track", ride);
+            console.log("user1 track", userId);
+            console.count("track");
+            console.log(socket.rooms);
             socketio
               .to(userId.toString())
               .emit("track", ride.driver_id?.lat, ride.driver_id?.long);

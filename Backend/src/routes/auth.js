@@ -28,11 +28,11 @@ module.exports = (passport) => {
         phoneNo: req.body.phone,
       });
       newUser.save();
-      console.log("Registered" + newUser);
+      console.log("Registered");
       const jwt = await jwtUtils.generateAuthJwt(newUser);
       const tokenArray = jwt.token.split(" ");
       const jwtToken = tokenArray[1];
-      console.log(tokenArray, jwtToken);
+      // console.log(tokenArray, jwtToken);
       const token = new Token({
         _userId: newUser._id,
         token: jwtToken,
@@ -46,7 +46,7 @@ module.exports = (passport) => {
         to: `+91${req.body.phone}`,
       });
 
-      console.log("SMS sent", sms);
+      console.log("SMS sent");
 
       return res.status(200).json({
         message: "User Successfully Registered",
@@ -74,11 +74,11 @@ module.exports = (passport) => {
         phoneNo: req.body.phone,
       });
       newUser.save();
-      console.log("Registered" + newUser);
+      console.log("Registered");
       const jwt = await jwtUtils.generateAuthJwt(newUser);
       const tokenArray = jwt.token.split(" ");
       const jwtToken = tokenArray[1];
-      console.log(tokenArray, jwtToken);
+      // console.log(tokenArray, jwtToken);
       const token = new DriverToken({
         _userId: newUser._id,
         token: jwtToken,
@@ -92,7 +92,7 @@ module.exports = (passport) => {
         to: `+91${req.body.phone}`,
       });
 
-      console.log("SMS sent", sms);
+      console.log("SMS sent");
 
       return res.status(200).json({
         message: "Partner Successfully Registered",
@@ -150,7 +150,7 @@ module.exports = (passport) => {
     try {
       //console.log(req.body)
       const user = await Driver.findOne({ phoneNo: req.body.phone });
-      console.log(user);
+      // console.log(user);
       if (!user) return res.status(401).json({ message: "Invalid email" });
 
       const isValid = await bcrypt.compare(req.body.password, user.password);

@@ -38,7 +38,7 @@ app.use(express.static("public"));
 app.set("view engine", "ejs");
 
 mongoose
-  .connect("your mogo url", {
+  .connect(process.env.MONGO_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     useFindAndModify: false,
