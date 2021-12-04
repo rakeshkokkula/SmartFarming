@@ -140,10 +140,11 @@ class BookRide extends Component {
       locations: loc,
       location: locate,
     });
-    // console.log(locate, 'locate');
+
+    console.log(this.props.route.params?.user?._id, 'locate');
     //this.props.trackRide({userId: this.props.route.params.user.user._id});
     this.requestLocationPermission();
-    this.socket.emit('join', this.state.user?._id);
+    this.socket.emit('join', this.props.route.params?.user?._id);
     // Geolocation.getCurrentPosition(
     //   (info) => {
     //     console.log('HJ', info);
@@ -158,6 +159,18 @@ class BookRide extends Component {
     // );
   }
   componentDidUpdate(prevProps, prevState) {
+    // console.log(this.props, 'state');
+    // console.log(prevProps, 'prevState');
+    // if (prevState !== this.state || prevProps !== this.props) {
+    //   console.log(prevState !== this.state, prevProps !== this.props);
+    // }
+    // if (
+    //   prevState?.cabLoc[0] !== this.state.cabLoc[0] ||
+    //   prevState?.cabLoc[1] !== this.state.cabLoc[1]
+    // ) {
+    //   console.log('not equal');
+    //   this.socket.emit('join', this.state?.user?._id);
+    // }
     //console.log('LOCATIONS', prevState);
     // if (this.state.rideDetails === null) {
     //   this.setState({rideDetails: this.props.myRide});
@@ -170,6 +183,7 @@ class BookRide extends Component {
     // }
 
     this.socket.on('completed', (ride) => {
+      console.log('completed');
       if (!this.state.completed) {
         this.props.navigation.navigate('Home');
         this.props.trackRide({userId: this.props?.user?.user?._id});
@@ -213,6 +227,7 @@ class BookRide extends Component {
     //console.log('ROUTES', this.props.myRide?.customers);
     const {myRide} = this.props;
     // console.log(myRide, 'myRide');
+
     return (
       <View style={styles.page}>
         <View style={styles.container}>
@@ -335,7 +350,7 @@ class BookRide extends Component {
               }>
               <Image source={cab} />
             </MapboxGL.MarkerView>
-            {myRide?.routes.map((route, index) => {
+            {myRide?.routes?.map((route, index) => {
               //console.log('lat long', route);
               if (route.state === 'pickup') {
                 return (
@@ -383,7 +398,7 @@ class BookRide extends Component {
               Ride Detail
             </Card.Title>
             <Card.Divider style={{backgroundColor: '#000'}} />
-            {myRide?.customers.map((customer) => {
+            {myRide?.customers?.map((customer) => {
               ////console.log('HNM', this.state.user);
               if (customer._id === this.state.user?._id) {
                 return (

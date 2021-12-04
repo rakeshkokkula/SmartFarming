@@ -133,248 +133,283 @@ module.exports = (socketio) => {
   };
 
   const trackRide = (req, res) => {
-    const { userId } = req.query;
-    console.log("TRACKKK", userId);
-    if (userId) {
+    try {
+      const { userId } = req.query;
+      console.log("TRACKKK", userId);
+      if (userId) {
+        Ride.findOne({
+          isCompleted: false,
+          customers: {
+            $elemMatch: {
+              _id: userId,
+              isRejected: false,
+              isCompleted: false,
+              isAccepted: true,
+            },
+          },
+        })
+          .populate("driver_id")
+          .then((ride, err) => {
+            console.log("track user", ride, err);
+
+            if (err) res.send(err);
+            res.send(ride);
+          });
+      } else {
+        res.send(null);
+      }
+    } catch (err) {
+      console.log(err, "err track");
+    }
+  };
+
+  const getRideForDriver = async (req, res) => {
+    try {
+      const { driverId } = req.query;
+      console.log(driverId, "driverId");
       Ride.findOne({
+        driver_id: driverId,
         isCompleted: false,
         customers: {
           $elemMatch: {
-            _id: userId,
             isRejected: false,
             isCompleted: false,
-            isAccepted: true,
           },
         },
       })
+        .populate("customers._id")
+        .exec((err, ride) => {
+          console.log("DRIVER", err);
+          if (err) res.send(err);
+          if (ride === null) res.status(500).send("no rides");
+          else res.send(ride);
+        });
+    } catch (err) {
+      console.log(err, "err track");
+    }
+  };
+
+  const rideDecide = (req, res) => {
+    try {
+      const { rideId, userId, accept, driverId } = req.body;
+      console.log("RIDE DECIDE");
+      let user_id = userId._id || userId;
+      Driver.findOneAndUpdate(
+        { _id: driverId },
+        { onGoingRideId: rideId },
+        { new: true }
+      ).then((err, ride) => console.log(err));
+      if (accept) {
+        Ride.findOneAndUpdate(
+          { _id: rideId, "customers._id": user_id },
+          {
+            $set: {
+              "customers.$.isAccepted": true,
+              "customers.$.isRejected": false,
+            },
+          },
+          { new: true }
+        ).then((ride, err) => {
+          console.log(user_id, "accept");
+          socketio.to(user_id.toString()).emit("accepted", { message: ride });
+          console.log(err);
+          if (err) {
+            res.send(err);
+          }
+          res.send(ride);
+        });
+      } else if (accept === false) {
+        Ride.findOneAndUpdate(
+          { _id: rideId, "customers._id": user_id },
+          {
+            $set: {
+              "customers.$.isAccepted": false,
+              "customers.$.isRejected": true,
+            },
+          },
+          { new: true }
+        ).then((ride, err) => {
+          console.log(err);
+          console.log(user_id, "not accept");
+          // socketio.to(userId.toString()).emit("accepted", { message: ride });
+          socketio
+            .to(user_id.toString())
+            .emit("rejected", { message: "No vehicles" });
+          //console.log(err, ride);
+          if (err) {
+            res.send(err);
+          }
+          // res.send(ride);
+          res.json({
+            message: "no cabs available",
+          });
+        });
+      } else {
+        console.log(user_id, "nooo");
+        socketio
+          .to(user_id.toString())
+          .emit("rejected", { message: "No vehicles" });
+        res.json({
+          message: "no cabs available",
+        });
+      }
+    } catch (err) {
+      console.log(err, "err track");
+      return err;
+    }
+  };
+
+  const getNearByRides = (req, res) => {
+    try {
+      let { lat, long } = req.query;
+      lat = parseFloat(lat);
+      long = parseFloat(long);
+      let locations = [[], []];
+      let nearest = null;
+      console.log(lat, long, "lat-long");
+      var targetPoint = turf.point([parseFloat(lat), parseFloat(long)], {
+        "marker-color": "#0F0",
+      });
+      console.log("target");
+      Driver.find({ online: true }, (err, drivers) => {
+        // console.log(drivers, "drivers", lat, long, err);
+        drivers.forEach((driver) => {
+          let { lat, long } = driver;
+          console.log(lat, long, "hgh");
+          locations[0].push(driver);
+          locations[1].push(
+            turf.point([
+              parseFloat(lat) || 17.385044,
+              parseFloat(long) || 78.486671,
+            ])
+          );
+          var points = turf.featureCollection(locations[1]);
+
+          nearest = turf.nearestPoint(targetPoint, points);
+          //console.log("NearBy", locations[0][nearest.properties.featureIndex]);
+        });
+        console.log("nearest");
+        if (err) {
+          res.status(500).json({
+            nearestPoints: "no nearby",
+          });
+        } else {
+          res.status(200).json({
+            nearestPoints: nearest?.geometry?.coordinates,
+          });
+        }
+      });
+    } catch (err) {
+      console.log(err, "err track");
+    }
+  };
+
+  const completeRide = async (req, res) => {
+    try {
+      let { rideId, userId, last } = req.body;
+      console.log("complete ride", userId);
+      let ride = await Ride.findOneAndUpdate(
+        { _id: rideId, "customers._id": userId },
+        { $set: { "customers.$.isCompleted": true } },
+        { new: true }
+      );
+      if (last) {
+        Driver.findOneAndUpdate(
+          { onGoingRideId: rideId },
+          { onGoingRideId: null }
+        );
+      }
+      if (ride) {
+        // console.log(ride);
+        socketio.to(userId.toString()).emit("completed", ride);
+        res.send(ride);
+      } else res.json({ error: "error" });
+
+      // User.findByIdAndUpdate(
+      //   { _id: userId },
+      //   { $push: { previousRides: { _id: rideId } } }
+      // );
+      // ride.weight = parseInt(ride.weight) * 10;
+      // ride.fare = parseInt(ride.fare);
+      // if (extraKms) ride.total = ride.fare * (kmsCovered + extraKms);
+      // else ride.total = ride.fare * kmsCovered;
+      // ride.total =
+      //   ride.weight + parseInt(ride.total) + parseInt(parseInt(ride.total) * 0.2);
+      // ride.isCompleted = true;
+      // ride.save().then((err, ride) => {
+      //   if (err) res.send(err);
+      //   else {
+      //     socketio.to(ride.user_id.toString()).emit("completed", ride);
+      //     res.send(ride);
+      //   }
+      // });
+    } catch (err) {
+      console.log(err, "err track");
+    }
+  };
+  const checkRideStatus = (req, res) => {
+    try {
+      const { userId } = req.query;
+      Ride.findOne({
+        "customers._id": userId,
+        "customers.isAccepted": false,
+      }).then(
+        (err) => res.send(err),
+        (ride) => res.send(ride)
+      );
+    } catch (err) {
+      console.log(err, "err track");
+    }
+  };
+  const closetheRide = async (req, res) => {
+    try {
+      const { driverId } = req.query;
+      console.log("CLOSE RIDE", req.query);
+      await Ride.findOneAndUpdate(
+        { driver_id: driverId },
+        { isCompleted: true, driver_id: null },
+        { new: true }
+      );
+      Driver.findOneAndUpdate(
+        { _id: driverId },
+        { onGoingRideId: null },
+        { new: true }
+      ).then((err, ride) => {
+        // console.log(err);
+        if (err) res.send(err);
+        else res.send(ride);
+      });
+    } catch (err) {
+      console.log(err, "err track");
+    }
+  };
+
+  const paymentRide = (req, res) => {
+    try {
+      const { userId, rideId, paymentId } = req.query;
+      // console.log("PAYMENT", req.query);
+      Ride.findOneAndUpdate(
+        { _id: rideId, "customers._id": userId },
+        {
+          $set: {
+            "customers.$.paymentStatus": "success",
+            "customers.$.paymentId": paymentId,
+          },
+        },
+        { new: true }
+      )
         .populate("driver_id")
         .then((err, ride) => {
-          console.log("track user");
+          // console.log("payment", err, ride);
 
           if (err) res.send(err);
           if (ride) {
             res.send(ride);
           }
         });
-    } else {
-      res.send(null);
+    } catch (err) {
+      console.log(err, "err track");
     }
-  };
-
-  const getRideForDriver = async (req, res) => {
-    const { driverId } = req.query;
-    console.log(driverId, "driverId");
-    Ride.findOne({
-      driver_id: driverId,
-      isCompleted: false,
-      customers: {
-        $elemMatch: {
-          isRejected: false,
-          isCompleted: false,
-        },
-      },
-    })
-      .populate("customers._id")
-      .exec((err, ride) => {
-        console.log("DRIVER", err);
-        if (err) res.send(err);
-        if (ride === null) res.status(500).send("no rides");
-        else res.send(ride);
-      });
-  };
-
-  const rideDecide = (req, res) => {
-    const { rideId, userId, accept, driverId } = req.body;
-    console.log("RIDE DECIDE");
-    Driver.findOneAndUpdate(
-      { _id: driverId },
-      { onGoingRideId: rideId },
-      { new: true }
-    ).then((err, ride) => console.log(err));
-    if (accept) {
-      Ride.findOneAndUpdate(
-        { _id: rideId, "customers._id": userId },
-        {
-          $set: {
-            "customers.$.isAccepted": true,
-            "customers.$.isRejected": false,
-          },
-        },
-        { new: true }
-      ).then((ride, err) => {
-        socketio.to(userId.toString()).emit("accepted", { message: ride });
-        console.log(err);
-        if (err) {
-          res.send(err);
-        }
-        res.send(ride);
-      });
-    } else if (accept === false) {
-      Ride.findOneAndUpdate(
-        { _id: rideId, "customers._id": userId },
-        {
-          $set: {
-            "customers.$.isAccepted": false,
-            "customers.$.isRejected": true,
-          },
-        },
-        { new: true }
-      ).then((ride, err) => {
-        console.log(err);
-        // socketio.to(userId.toString()).emit("accepted", { message: ride });
-        socketio
-          .to(userId.toString())
-          .emit("rejected", { message: "No vehicles" });
-        //console.log(err, ride);
-        if (err) {
-          res.send(err);
-        }
-        // res.send(ride);
-        res.json({
-          message: "no cabs available",
-        });
-      });
-    } else {
-      socketio
-        .to(userId.toString())
-        .emit("rejected", { message: "No vehicles" });
-      res.json({
-        message: "no cabs available",
-      });
-    }
-  };
-
-  const getNearByRides = (req, res) => {
-    let { lat, long } = req.query;
-    lat = parseFloat(lat);
-    long = parseFloat(long);
-    let locations = [[], []];
-    let nearest = null;
-    console.log(lat, long, "lat-long");
-    var targetPoint = turf.point([parseFloat(lat), parseFloat(long)], {
-      "marker-color": "#0F0",
-    });
-    console.log("target");
-    Driver.find({ online: true }, (err, drivers) => {
-      // console.log(drivers, "drivers", lat, long, err);
-      drivers.forEach((driver) => {
-        let { lat, long } = driver;
-        console.log(lat, long, "hgh");
-        locations[0].push(driver);
-        locations[1].push(
-          turf.point([
-            parseFloat(lat) || 17.385044,
-            parseFloat(long) || 78.486671,
-          ])
-        );
-        var points = turf.featureCollection(locations[1]);
-
-        nearest = turf.nearestPoint(targetPoint, points);
-        //console.log("NearBy", locations[0][nearest.properties.featureIndex]);
-      });
-      console.log("nearest");
-      if (err) {
-        res.status(500).json({
-          nearestPoints: "no nearby",
-        });
-      } else {
-        res.status(200).json({
-          nearestPoints: nearest?.geometry?.coordinates,
-        });
-      }
-    });
-  };
-
-  const completeRide = async (req, res) => {
-    let { rideId, userId, last } = req.body;
-    console.log("complete ride");
-    let ride = await Ride.findOneAndUpdate(
-      { _id: rideId, "customers._id": userId },
-      { $set: { "customers.$.isCompleted": true } },
-      { new: true }
-    );
-    if (last) {
-      Driver.findOneAndUpdate(
-        { onGoingRideId: rideId },
-        { onGoingRideId: null }
-      );
-    }
-    if (ride) {
-      // console.log(ride);
-      socketio.to(userId.toString()).emit("completed", ride);
-      res.send(ride);
-    } else res.json({ error: "error" });
-
-    // User.findByIdAndUpdate(
-    //   { _id: userId },
-    //   { $push: { previousRides: { _id: rideId } } }
-    // );
-    // ride.weight = parseInt(ride.weight) * 10;
-    // ride.fare = parseInt(ride.fare);
-    // if (extraKms) ride.total = ride.fare * (kmsCovered + extraKms);
-    // else ride.total = ride.fare * kmsCovered;
-    // ride.total =
-    //   ride.weight + parseInt(ride.total) + parseInt(parseInt(ride.total) * 0.2);
-    // ride.isCompleted = true;
-    // ride.save().then((err, ride) => {
-    //   if (err) res.send(err);
-    //   else {
-    //     socketio.to(ride.user_id.toString()).emit("completed", ride);
-    //     res.send(ride);
-    //   }
-    // });
-  };
-  const checkRideStatus = (req, res) => {
-    const { userId } = req.query;
-    Ride.findOne({
-      "customers._id": userId,
-      "customers.isAccepted": false,
-    }).then(
-      (err) => res.send(err),
-      (ride) => res.send(ride)
-    );
-  };
-  const closetheRide = async (req, res) => {
-    const { driverId } = req.query;
-    console.log("CLOSE RIDE", req.query);
-    await Ride.findOneAndUpdate(
-      { driver_id: driverId },
-      { isCompleted: true, driver_id: null },
-      { new: true }
-    );
-    Driver.findOneAndUpdate(
-      { _id: driverId },
-      { onGoingRideId: null },
-      { new: true }
-    ).then((err, ride) => {
-      // console.log(err);
-      if (err) res.send(err);
-      else res.send(ride);
-    });
-  };
-
-  const paymentRide = (req, res) => {
-    const { userId, rideId, paymentId } = req.query;
-    // console.log("PAYMENT", req.query);
-    Ride.findOneAndUpdate(
-      { _id: rideId, "customers._id": userId },
-      {
-        $set: {
-          "customers.$.paymentStatus": "success",
-          "customers.$.paymentId": paymentId,
-        },
-      },
-      { new: true }
-    )
-      .populate("driver_id")
-      .then((err, ride) => {
-        // console.log("payment", err, ride);
-
-        if (err) res.send(err);
-        if (ride) {
-          res.send(ride);
-        }
-      });
   };
   router.post("/book", createBooking);
   router.patch("/completeRide", completeRide);

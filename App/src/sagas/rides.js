@@ -108,10 +108,14 @@ function* bookRide({payload}) {
 
 function* trackRide({payload}) {
   try {
-    console.log('TRACK', payload);
-    const resp = yield axios.get(
-      `${baseUrl}/ride/track?userId=${payload.userId}`,
-    );
+    console.log('TRACK', payload, 'gjhg');
+    const resp = yield axios
+      .get(`${baseUrl}/ride/track?userId=${payload.userId}`)
+      .then((res) => res)
+      .catch((err) => {
+        console.log(err);
+        return err;
+      });
     //Alert.alert('success');
     console.log('Resp TRACK', resp.data);
     if (resp && resp.status === 200) {
@@ -119,6 +123,8 @@ function* trackRide({payload}) {
         type: TRACK_RIDE + '_SUCCESS',
         data: resp.data,
       });
+    } else {
+      console.log(resp, 'resssss');
     }
   } catch (err) {
     console.log('RIDE TRACK ERROR', err);
@@ -211,6 +217,7 @@ function* completeRide({payload}) {
 
 function* decideRide({payload}) {
   try {
+    console.log(payload);
     const resp = yield axios.patch(`${baseUrl}/ride/decideRide`, payload);
     //console.log('Resp decide -->', resp.data.customers);
     //Alert.alert('J');

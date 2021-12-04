@@ -1,4 +1,4 @@
-import React, {Component, useState, useEffect} from 'react';
+import React, {Component} from 'react';
 import {
   StyleSheet,
   Text,
@@ -40,7 +40,6 @@ import Search from './Search';
 import CreateRide from './CreateRide';
 import Places from './Places';
 import {PermissionsAndroid} from 'react-native';
-import {lessThan} from 'react-native-reanimated';
 
 MapboxGL.setAccessToken(
   'pk.eyJ1IjoicmVoYW5tb2hpdWRkaW4iLCJhIjoiY2trdmNjZmQ4MXo0cjJ2czFkczUyZGJ2OCJ9.9xqSVO79n-16_Qd9yBxKGw',
@@ -147,7 +146,6 @@ class Home extends Component {
     MapboxGL.setTelemetryEnabled(false);
     this.getUser();
     this.requestLocationPermission();
-    console.log(this.state.accepted, this.state.alloted, 'acl');
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -179,23 +177,9 @@ class Home extends Component {
       });
     }
 
-    if (this.state.user?.role === 'user') {
-      this.socket.on('accepted', (ride) => {
-        console.log(this.state.accepted, 'accepted');
-        if (!this.state.accepted) {
-          console.log('SOCKET MESSAGE RIDE ACCEPTED -->>', ride);
-          this.props.newRideNotif({
-            ride: ride,
-          });
-          this.props.trackRide({userId: this.state.user?.user?._id});
-          Alert.alert('Wooh Ride Accepted');
-          this.setState({accepted: true});
-        }
-      });
-      this.socket.on('rejected', (msg) => {
-        Alert.alert('Sorry :( No Driver');
-      });
-    }
+    this.socket.on('accepted', (ride) => {
+      console.log('acccccccccccccccccccccccccccccccccccccccccccccccccccccc');
+    });
 
     if (prevProps.directions?.uuid !== this.props.directions?.uuid) {
       let arr = polyline.toGeoJSON(this.props.directions.routes[0].geometry, 5);
@@ -227,7 +211,23 @@ class Home extends Component {
       this.props.cabs[1] = parseFloat(this.props.cabs[1]);
     }
     this.socket.emit('join', this.state.user?.user?._id);
-    this.socket.emit('update', this.state.location[1], this.state.location[0]);
+    // this.socket.emit('update', this.state.location[1], this.state.location[0]);
+
+    this.socket.on('accepted', (ride) => {
+      console.log(this.state.accepted, 'accepted');
+      if (!this.state.accepted) {
+        console.log('SOCKET MESSAGE RIDE ACCEPTED -->>', ride);
+        this.props.newRideNotif({
+          ride: ride,
+        });
+        this.props.trackRide({userId: this.state.user?.user?._id});
+        Alert.alert('Wooh Ride Accepted');
+        this.setState({accepted: true});
+      }
+    });
+    this.socket.on('rejected', (msg) => {
+      Alert.alert('Sorry :( No Driver');
+    });
 
     // else if (user?.role === 'driver') {
     //   socket.on('allot', (ride) => {

@@ -277,7 +277,7 @@ class BookRide extends Component {
           {myRide !== null &&
             myRide?.customers?.map((customer, index) => {
               if (!customer.isRejected && !customer.isCompleted) {
-                //console.log('RIDE CUS', customer);
+                console.log('RIDE CUS', customer);
                 return (
                   <View key={index}>
                     <View
